@@ -44,8 +44,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -306,74 +306,16 @@ elif st.session_state.modulo_actual == "Finanzas":
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
     df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
 
-    # 🗓️ Definición de corte a D-1 (Día anterior al actual)
+    # 🗓️ Definición por defecto de corte a D-1
     hoy = datetime.now()
     _, total_dias_mes = calendar.monthrange(anio_sel, mes_num)
     
     if anio_sel == hoy.year and mes_num == hoy.month:
-        dia_corte = max(1, hoy.day - 1) # Corte D-1
+        dia_corte_default = max(1, hoy.day - 1)
     elif (anio_sel * 12 + mes_num) < (hoy.year * 12 + hoy.month):
-        dia_corte = total_dias_mes # Mes pasado cerrado
+        dia_corte_default = total_dias_mes
     else:
-        dia_corte = 1 # Mes futuro
-    
-    pct_meta_tiempo = (dia_corte / total_dias_mes) * 100
-
-    # Filtrar datos de DataFrame hasta el día de corte D-1
-    def filtrar_hasta_corte(df):
-        df_copia = df.copy()
-        df_copia["Dia_Num"] = df_copia["Fecha y Día"].apply(lambda x: int(x.split(" ")[0].split("-")[2]))
-        return df_copia[df_copia["Dia_Num"] <= dia_corte]
-
-    df_mes_corte = filtrar_hasta_corte(df_mes_activo)
-
-    def obtener_consolidado(df_corte, df_presup):
-        suma_mes = df_corte.groupby("Almacén")[["Venta Diaria ($)", "Transacciones / Clientes", "Unidades Vendidas", "Desperdicio (Unid)"]].sum().reset_index()
-        consolidado = pd.merge(df_presup, suma_mes, on="Almacén", how="left").fillna(0)
-        
-        consolidado["Ticket Promedio ($)"] = consolidado.apply(
-            lambda row: row["Venta Diaria ($)"] / row["Transacciones / Clientes"] if row["Transacciones / Clientes"] > 0 else 0.0,
-            axis=1
-        )
-        
-        consolidado["Venta Proporcional Año Pasado ($)"] = consolidado.apply(
-            lambda row: (row[col_vp_nombre] / total_dias_mes) * dia_corte,
-            axis=1
-        )
-        
-        consolidado = consolidado[["Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Proporcional Año Pasado ($)", "Venta Diaria ($)", "Ticket Promedio ($)", "Unidades Vendidas", "Desperdicio (Unid)"]]
-        consolidado.rename(columns={"Venta Diaria ($)": "Venta Acumulada Mes ($)", "Desperdicio (Unid)": "Desperdicio Acumulado (Unid)"}, inplace=True)
-        
-        consolidado["Presupuesto Mes ($)"] = consolidado["Presupuesto Mes ($)"].round(0)
-        consolidado[col_vp_nombre] = consolidado[col_vp_nombre].round(0)
-        consolidado["Venta Proporcional Año Pasado ($)"] = consolidado["Venta Proporcional Año Pasado ($)"].round(0)
-        consolidado["Venta Acumulada Mes ($)"] = consolidado["Venta Acumulada Mes ($)"].round(0)
-        consolidado["Ticket Promedio ($)"] = consolidado["Ticket Promedio ($)"].round(0)
-        consolidado["Desperdicio Acumulado (Unid)"] = consolidado["Desperdicio Acumulado (Unid)"].round(0).astype(int)
-        consolidado["Unidades Vendidas"] = consolidado["Unidades Vendidas"].round(0).astype(int)
-        return consolidado
-
-    df_consolidado = obtener_consolidado(df_mes_corte, df_presupuesto_activo)
-
-    def calcular_metricas_globales(df_con, df_presup):
-        total_venta = df_con["Venta Acumulada Mes ($)"].sum()
-        total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
-        
-        cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
-        meta_acumulada_a_la_fecha = (total_presupuesto / total_dias_mes) * dia_corte
-        cumplimiento_proporcional_fecha = (total_venta / meta_acumulada_a_la_fecha * 100) if meta_acumulada_a_la_fecha > 0 else 0
-        
-        total_transacciones = df_mes_corte["Transacciones / Clientes"].sum()
-        ticket_prom_zona = (total_venta / total_transacciones) if total_transacciones > 0 else 0.0
-        
-        total_unid_zona = df_con["Unidades Vendidas"].sum()
-        total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
-        pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
-        
-        total_venta_prop_pasada = df_con["Venta Proporcional Año Pasado ($)"].sum()
-        crecimiento_zona = ((total_venta - total_venta_prop_pasada) / total_venta_prop_pasada * 100) if total_venta_prop_pasada > 0 else 0.0
-        
-        return total_venta, cumplimiento, cumplimiento_proporcional_fecha, pct_desp_zona, ticket_prom_zona, meta_acumulada_a_la_fecha, crecimiento_zona
+        dia_corte_default = 1
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
@@ -381,24 +323,114 @@ elif st.session_state.modulo_actual == "Finanzas":
         ])
         
         with tab_resumen:
-            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
+            st.subheader(f"🌐 Análisis Integral & Selector de Fechas Rango — {mes_sel_nombre} {anio_sel}")
             
-            st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel}) — Corte D-1 al Día {dia_corte} ({pct_meta_tiempo:.1f}% del mes)")
+            # 📅 Selector de Rango de Fechas Desplegable (Calendario Streamlit)
+            primer_dia_mes = datetime(anio_sel, mes_num, 1).date()
+            ultimo_dia_mes = datetime(anio_sel, mes_num, total_dias_mes).date()
+            fecha_fin_default = datetime(anio_sel, mes_num, dia_corte_default).date() if dia_corte_default <= total_dias_mes else ultimo_dia_mes
+            
+            st.markdown("### 🗓️ Filtrar Análisis por Rango de Fechas Personalizado")
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                rango_fechas = st.date_input(
+                    "Selecciona el rango de fechas (Inicio y Fin):",
+                    value=(primer_dia_mes, fecha_fin_default),
+                    min_value=datetime(2025, 1, 1).date(),
+                    max_value=datetime(2028, 12, 31).date(),
+                    key=f"rango_fechas_{anio_sel}_{mes_num}"
+                )
+            
+            # Validar y extraer fechas de inicio y fin del selector
+            if isinstance(rango_fechas, tuple) and len(rango_fechas) == 2:
+                f_inicio, f_fin = rango_fechas
+            elif isinstance(rango_fechas, tuple) and len(rango_fechas) == 1:
+                f_inicio = f_fin = rango_fechas[0]
+            else:
+                f_inicio = primer_dia_mes
+                f_fin = fecha_fin_default
+
+            # Calcular número de días en el rango seleccionado
+            if f_inicio > f_fin:
+                f_inicio, f_fin = f_fin, f_inicio
+                
+            delta_dias = (f_fin - f_inicio).days + 1
+            pct_meta_tiempo = (delta_dias / total_dias_mes) * 100
+
+            # Filtrar dataframe general según el rango de fechas seleccionado
+            def filtrar_por_rango(df, inicio, fin):
+                df_copia = df.copy()
+                df_copia["Fecha_Obj"] = pd.to_datetime(df_copia["Fecha y Día"].apply(lambda x: x.split(" ")[0])).dt.date
+                return df_copia[(df_copia["Fecha_Obj"] >= inicio) & (df_copia["Fecha_Obj"] <= fin)]
+
+            df_mes_rango = filtrar_por_rango(df_mes_activo, f_inicio, f_fin)
+
+            def obtener_consolidado_rango(df_rango, df_presup):
+                suma_mes = df_rango.groupby("Almacén")[["Venta Diaria ($)", "Transacciones / Clientes", "Unidades Vendidas", "Desperdicio (Unid)"]].sum().reset_index()
+                consolidado = pd.merge(df_presup, suma_mes, on="Almacén", how="left").fillna(0)
+                
+                consolidado["Ticket Promedio ($)"] = consolidado.apply(
+                    lambda row: row["Venta Diaria ($)"] / row["Transacciones / Clientes"] if row["Transacciones / Clientes"] > 0 else 0.0,
+                    axis=1
+                )
+                
+                consolidado["Venta Proporcional Año Pasado ($)"] = consolidado.apply(
+                    lambda row: (row[col_vp_nombre] / total_dias_mes) * delta_dias,
+                    axis=1
+                )
+                
+                consolidado = consolidado[["Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Proporcional Año Pasado ($)", "Venta Diaria ($)", "Ticket Promedio ($)", "Unidades Vendidas", "Desperdicio (Unid)"]]
+                consolidado.rename(columns={"Venta Diaria ($)": "Venta Acumulada Rango ($)", "Desperdicio (Unid)": "Desperdicio Acumulado (Unid)"}, inplace=True)
+                
+                consolidado["Presupuesto Mes ($)"] = consolidado["Presupuesto Mes ($)"].round(0)
+                consolidado[col_vp_nombre] = consolidado[col_vp_nombre].round(0)
+                consolidado["Venta Proporcional Año Pasado ($)"] = consolidado["Venta Proporcional Año Pasado ($)"].round(0)
+                consolidado["Venta Acumulada Rango ($)"] = consolidado["Venta Acumulada Rango ($)"].round(0)
+                consolidado["Ticket Promedio ($)"] = consolidado["Ticket Promedio ($)"].round(0)
+                consolidado["Desperdicio Acumulado (Unid)"] = consolidado["Desperdicio Acumulado (Unid)"].round(0).astype(int)
+                consolidado["Unidades Vendidas"] = consolidado["Unidades Vendidas"].round(0).astype(int)
+                return consolidado
+
+            df_consolidado_rango = obtener_consolidado_rango(df_mes_rango, df_presupuesto_activo)
+
+            def calcular_metricas_globales_rango(df_con, df_presup):
+                total_venta = df_con["Venta Acumulada Rango ($)"].sum()
+                total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
+                
+                cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
+                meta_acumulada_rango = (total_presupuesto / total_dias_mes) * delta_dias
+                cumplimiento_proporcional_rango = (total_venta / meta_acumulada_rango * 100) if meta_acumulada_rango > 0 else 0
+                
+                total_transacciones = df_mes_rango["Transacciones / Clientes"].sum()
+                ticket_prom_zona = (total_venta / total_transacciones) if total_transacciones > 0 else 0.0
+                
+                total_unid_zona = df_con["Unidades Vendidas"].sum()
+                total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
+                pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
+                
+                total_venta_prop_pasada = df_con["Venta Proporcional Año Pasado ($)"].sum()
+                crecimiento_zona = ((total_venta - total_venta_prop_pasada) / total_venta_prop_pasada * 100) if total_venta_prop_pasada > 0 else 0.0
+                
+                return total_venta, cumplimiento, cumplimiento_proporcional_rango, pct_desp_zona, ticket_prom_zona, meta_acumulada_rango, crecimiento_zona
+
+            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales_rango(df_consolidado_rango, df_presupuesto_activo)
+
+            st.markdown(f"### 🌐 Indicadores Globales Zona 4 (Rango: {f_inicio} al {f_fin} — {delta_dias} días, {pct_meta_tiempo:.1f}% del mes)")
             
             col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
             with col_k1:
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">💰 VENTA ACUMULADA</div>
+                        <div class="erp-title">💰 VENTA ACUMULADA RANGO</div>
                         <div class="erp-value">${t_venta:,.0f}</div>
-                        <div style="font-size: 11px; color: #ffb74d; margin-top: 4px;">Meta a la Fecha: ${meta_fecha_zona:,.0f}</div>
+                        <div style="font-size: 11px; color: #ffb74d; margin-top: 4px;">Meta Proporcional: ${meta_fecha_zona:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k2:
                 color_cump_card = "#28a745" if t_cump_prop >= 100 else ("#ffc107" if t_cump_prop >= 85 else "#dc3545")
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
+                        <div class="erp-title">📈 CUMPLIMIENTO RANGO</div>
                         <div class="erp-value" style="color: {color_cump_card};">{t_cump_prop:.2f}%</div>
                         <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {t_cumplimiento:.2f}%</div>
                     </div>
@@ -423,21 +455,20 @@ elif st.session_state.modulo_actual == "Finanzas":
                 color_crec_card = "#28a745" if crecimiento_zona >= 0 else "#dc3545"
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
+                        <div class="erp-title">📊 CRECIMIENTO RANGO</div>
                         <div class="erp-value" style="color: {color_crec_card};">{crecimiento_zona:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} en rango</div>
                     </div>
                 """, unsafe_allow_html=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader(f"Análisis Integral de Almacenes & Crecimiento a la misma fecha ({anio_sel} vs {anio_pasado}) - {mes_sel_nombre}")
-            st.info(f"ℹ️ Mostrando corte acumulado de operaciones hasta el **Día {dia_corte} de {mes_sel_nombre}** (D-1).")
+            st.subheader(f"Análisis Integral de Almacenes en Rango ({f_inicio} al {f_fin}) — {mes_sel_nombre}")
             
-            df_mostrar = df_consolidado.copy()
-            df_mostrar["% Cumplimiento"] = (df_mostrar["Venta Acumulada Mes ($)"] / df_mostrar["Presupuesto Mes ($)"] * 100)
+            df_mostrar = df_consolidado_rango.copy()
+            df_mostrar["% Cumplimiento Rango"] = (df_mostrar["Venta Acumulada Rango ($)"] / (df_mostrar["Presupuesto Mes ($)"] / total_dias_mes * delta_dias) * 100)
             
             df_mostrar["% Crecimiento Dinamico"] = df_mostrar.apply(
-                lambda row: ((row["Venta Acumulada Mes ($)"] - row["Venta Proporcional Año Pasado ($)"]) / row["Venta Proporcional Año Pasado ($)"] * 100) if row["Venta Proporcional Año Pasado ($)"] > 0 else 0.0,
+                lambda row: ((row["Venta Acumulada Rango ($)"] - row["Venta Proporcional Año Pasado ($)"]) / row["Venta Proporcional Año Pasado ($)"] * 100) if row["Venta Proporcional Año Pasado ($)"] > 0 else 0.0,
                 axis=1
             )
             
@@ -446,24 +477,24 @@ elif st.session_state.modulo_actual == "Finanzas":
                 axis=1
             )
             
-            col_crecimiento_titulo = f"% Crecimiento a la fecha ({anio_sel} vs {anio_pasado})"
+            col_crecimiento_titulo = f"% Crecimiento en Rango ({anio_sel} vs {anio_pasado})"
             
             df_formato = df_mostrar.copy()
             df_formato["Presupuesto Mes ($)"] = df_formato["Presupuesto Mes ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato[col_vp_nombre] = df_formato[col_vp_nombre].apply(lambda x: f"${x:,.0f}")
             df_formato["Venta Proporcional Año Pasado ($)"] = df_formato["Venta Proporcional Año Pasado ($)"].apply(lambda x: f"${x:,.0f}")
-            df_formato["Venta Acumulada Mes ($)"] = df_formato["Venta Acumulada Mes ($)"].apply(lambda x: f"${x:,.0f}")
+            df_formato["Venta Acumulada Rango ($)"] = df_formato["Venta Acumulada Rango ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato["Ticket Promedio ($)"] = df_formato["Ticket Promedio ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato["Unidades Vendidas"] = df_formato["Unidades Vendidas"].apply(lambda x: f"{x:,}")
             df_formato["Desperdicio Acumulado (Unid)"] = df_formato["Desperdicio Acumulado (Unid)"].apply(lambda x: f"{x:,}")
             df_formato["% Desperdicio Fila"] = df_formato["% Desperdicio"].apply(lambda x: f"{x:.2f}%")
-            df_formato["% Cumplimiento Promedio"] = df_formato["% Cumplimiento"].apply(lambda x: f"{x:.2f}%")
+            df_formato["% Cumplimiento Rango Fila"] = df_mostrar["% Cumplimiento Rango"].apply(lambda x: f"{x:.2f}%")
             df_formato[col_crecimiento_titulo] = df_mostrar["% Crecimiento Dinamico"].apply(lambda x: f"{x:.2f}%")
             
             df_para_mostrar = df_formato[[
                 "Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Proporcional Año Pasado ($)", 
-                "Venta Acumulada Mes ($)", "Ticket Promedio ($)", "Unidades Vendidas", 
-                "Desperdicio Acumulado (Unid)", "% Desperdicio Fila", "% Cumplimiento Promedio", col_crecimiento_titulo
+                "Venta Acumulada Rango ($)", "Ticket Promedio ($)", "Unidades Vendidas", 
+                "Desperdicio Acumulado (Unid)", "% Desperdicio Fila", "% Cumplimiento Rango Fila", col_crecimiento_titulo
             ]]
 
             def color_semaforo_integral(row):
@@ -476,8 +507,8 @@ elif st.session_state.modulo_actual == "Finanzas":
                     pass
 
                 try:
-                    val_cump = float(row['% Cumplimiento Promedio'].replace('%', '').strip())
-                    idx_cump = row.index.get_loc('% Cumplimiento Promedio')
+                    val_cump = float(row['% Cumplimiento Rango Fila'].replace('%', '').strip())
+                    idx_cump = row.index.get_loc('% Cumplimiento Rango Fila')
                     if val_cump >= 100:
                         estilos[idx_cump] = 'background-color: #d4edda; color: #155724; font-weight: bold;'
                     elif val_cump >= 85:
@@ -501,7 +532,7 @@ elif st.session_state.modulo_actual == "Finanzas":
 
                 return estilos
 
-            st.markdown(f"### 📊 Semáforo de Control Integral (Corte D-1)")
+            st.markdown(f"### 📊 Semáforo de Control Integral (Rango Seleccionado)")
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
             st.dataframe(df_estilizado, use_container_width=True)
 
@@ -517,17 +548,21 @@ elif st.session_state.modulo_actual == "Finanzas":
                 st.rerun()
             
         with tab_individual:
+            # Para el registro diario mantenemos el corte D-1 por defecto
+            dia_corte_ind = dia_corte_default
+            df_mes_corte_ind = filtrar_por_rango(df_mes_activo, primer_dia_mes, datetime(anio_sel, mes_num, min(dia_corte_ind, total_dias_mes)).date())
+
             st.subheader(f"Registro Diario por Tienda - {mes_sel_nombre} {anio_sel}")
             almacen_sel = st.selectbox("Selecciona el almacén a auditar / operar:", st.session_state.lista_almacenes_base)
             
             presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
-            meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte
+            meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte_ind
             
             venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel][col_vp_nombre].values[0])
-            venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte
+            venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte_ind
             
             df_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == almacen_sel].copy()
-            df_tienda_corte = df_mes_corte[df_mes_corte["Almacén"] == almacen_sel].copy()
+            df_tienda_corte = df_mes_corte_ind[df_mes_corte_ind["Almacén"] == almacen_sel].copy()
             
             venta_tienda = df_tienda_corte["Venta Diaria ($)"].sum()
             trans_tienda = df_tienda_corte["Transacciones / Clientes"].sum()
@@ -540,7 +575,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             ticket_tienda = (venta_tienda / trans_tienda) if trans_tienda > 0 else 0.0
             pct_desp_tienda = (desp_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
-            st.markdown(f"### 📍 Indicadores Exclusivos de: {almacen_sel} (Corte D-1 al Día {dia_corte})")
+            st.markdown(f"### 📍 Indicadores Exclusivos de: {almacen_sel} (Corte D-1 al Día {dia_corte_ind})")
             
             col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
             with col_t1:
@@ -641,16 +676,25 @@ elif st.session_state.modulo_actual == "Finanzas":
                     st.error(f"Error al leer el archivo Excel: {e}")
 
     else:
+        dia_corte_admin = dia_corte_default
+        def filtrar_por_rango(df, inicio, fin):
+            df_copia = df.copy()
+            df_copia["Fecha_Obj"] = pd.to_datetime(df_copia["Fecha y Día"].apply(lambda x: x.split(" ")[0])).dt.date
+            return df_copia[(df_copia["Fecha_Obj"] >= inicio) & (df_copia["Fecha_Obj"] <= fin)]
+
+        primer_dia_mes = datetime(anio_sel, mes_num, 1).date()
+        df_mes_corte_admin = filtrar_por_rango(df_mes_activo, primer_dia_mes, datetime(anio_sel, mes_num, min(dia_corte_admin, total_dias_mes)).date())
+
         ced = st.session_state.cedula_actual
         tienda = st.session_state.db_admins[ced]["tienda"]
         
         presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
-        meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte
+        meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte_admin
         
         venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda][col_vp_nombre].values[0])
-        venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte
+        venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte_admin
         
-        df_mi_tienda_corte = df_mes_corte[df_mes_corte["Almacén"] == tienda].copy()
+        df_mi_tienda_corte = df_mes_corte_admin[df_mes_corte_admin["Almacén"] == tienda].copy()
         df_mi_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == tienda].copy()
         
         v_tienda = df_mi_tienda_corte["Venta Diaria ($)"].sum()
@@ -664,7 +708,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         tk_tienda = (v_tienda / tr_tienda) if tr_tienda > 0 else 0.0
         pct_desp_tienda = (d_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
-        st.info(f"Tienda asignada: {tienda} | Periodo: {mes_sel_nombre} {anio_sel} (Corte D-1 al Día {dia_corte})")
+        st.info(f"Tienda asignada: {tienda} | Periodo: {mes_sel_nombre} {anio_sel} (Corte D-1 al Día {dia_corte_admin})")
         
         col_ad1, col_ad2, col_ad3, col_ad4, col_ad5 = st.columns(5)
         with col_ad1:
