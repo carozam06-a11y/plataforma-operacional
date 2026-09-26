@@ -911,7 +911,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_edit
                 guardar_mes(anio_sel, mes_num, df_mes_activo)
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
@@ -958,7 +958,18 @@ elif st.session_state.modulo_actual == "EOR":
         wb_maestro = openpyxl.load_workbook(EXCEL_EOR_MAESTRO, data_only=True)
         sheet_rev = wb_maestro[' Revisión de operaciones']
 
-        # Extraer estructura de ítems desde la hoja ' Revisión de operaciones'
+        # Módulos / Categorías excluidas a petición de la Consultora
+        modulos_excluidos = [
+            "Limpieza del restaurante", 
+            "Servicios para huéspedes", 
+            "Experiencia en restaurante", 
+            "Capacitación", 
+            "Calidad del producto", 
+            "Comercialización", 
+            "Normas de equipamiento"
+        ]
+
+        # Extraer estructura de ítems desde la hoja ' Revisión de operaciones' excluyendo los módulos indicados
         preguntas_eor = []
         cat_actual = ""
         
@@ -970,6 +981,10 @@ elif st.session_state.modulo_actual == "EOR":
             if val_cat and val_cat.strip():
                 cat_actual = val_cat.strip()
             
+            # Omitir categorías excluidas
+            if any(exc.lower() in cat_actual.lower() for exc in modulos_excluidos):
+                continue
+
             if val_id and val_desc and str(val_id).startswith(("RSI", "FS-", "RC", "GS", "RE", "TR", "Pregunta", "MD", "ES", "LS")):
                 preguntas_eor.append({
                     "Categoria": cat_actual if cat_actual else "General",
