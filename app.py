@@ -508,7 +508,7 @@ elif st.session_state.modulo_actual == "Finanzas":
 
             t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales_rango(df_consolidado_rango, df_presupuesto_activo)
 
-            st.markdown(f"### 🌐 Indicadores Globales Zona 4 (Rango: {f_inicio} al {f_fin} — {delta_dias} días, {pct_meta_tiempo:.1f}% del mes)")
+            st.markdown(f"### 🌐 Indicadores Globales Zona 4 ({f_inicio} al {f_fin} — {delta_dias} días, {pct_meta_tiempo:.1f}% del mes)")
             
             col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
             with col_k1:
@@ -555,7 +555,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 """, unsafe_allow_html=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader(f"Análisis Integral de Almacenes en Rango ({f_inicio} al {f_fin})")
+            st.subheader("📊 Semáforo de Control Integral")
             
             df_mostrar = df_consolidado_rango.copy()
             df_mostrar["% Cumplimiento Rango"] = (df_mostrar["Venta Acumulada Rango ($)"] / (df_mostrar["Presupuesto Mes ($)"] / total_dias_mes * delta_dias) * 100)
@@ -625,7 +625,6 @@ elif st.session_state.modulo_actual == "Finanzas":
 
                 return estilos
 
-            st.markdown(f"### 📊 Semáforo de Control Integral (Rango Seleccionado)")
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
             st.dataframe(df_estilizado, use_container_width=True)
 
