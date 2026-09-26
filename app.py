@@ -127,8 +127,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -420,17 +420,17 @@ elif st.session_state.modulo_actual == "Finanzas":
         ])
         
         with tab_resumen:
-            st.subheader(f"🌐 Análisis Integral & Selector de Fechas Rango — {mes_sel_nombre} {anio_sel}")
+            st.subheader("📋 Análisis Integral de Almacenes")
             
             primer_dia_mes = datetime(anio_sel, mes_num, 1).date()
             ultimo_dia_mes = datetime(anio_sel, mes_num, total_dias_mes).date()
             fecha_fin_default = datetime(anio_sel, mes_num, dia_corte_default).date() if dia_corte_default <= total_dias_mes else ultimo_dia_mes
             
-            st.markdown("### 🗓️ Filtrar Análisis por Rango de Fechas Personalizado")
+            st.markdown("### 🗓️ Rango de Fechas")
             col_f1, col_f2 = st.columns(2)
             with col_f1:
                 rango_fechas = st.date_input(
-                    "Selecciona el rango de fechas (Inicio y Fin):",
+                    "Selecciona el rango (Inicio y Fin):",
                     value=(primer_dia_mes, fecha_fin_default),
                     min_value=datetime(2025, 1, 1).date(),
                     max_value=datetime(2028, 12, 31).date(),
@@ -555,7 +555,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 """, unsafe_allow_html=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader(f"Análisis Integral de Almacenes en Rango ({f_inicio} al {f_fin}) — {mes_sel_nombre}")
+            st.subheader(f"Análisis Integral de Almacenes en Rango ({f_inicio} al {f_fin})")
             
             df_mostrar = df_consolidado_rango.copy()
             df_mostrar["% Cumplimiento Rango"] = (df_mostrar["Venta Acumulada Rango ($)"] / (df_mostrar["Presupuesto Mes ($)"] / total_dias_mes * delta_dias) * 100)
@@ -792,7 +792,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 )
 
             with col_btn_ul:
-                arch_reg = st.file_uploader("Subir Registros Diarios in Excel", type=["xlsx"], key="upload_reg_diario")
+                arch_reg = st.file_uploader("Subir Registros Diarios en Excel", type=["xlsx"], key="upload_reg_diario")
                 if arch_reg:
                     try:
                         df_reg_excel = pd.read_excel(arch_reg)
