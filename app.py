@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno & Magenta)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno & Unificado)
 # ==========================================
 st.markdown("""
     <style>
@@ -19,21 +19,22 @@ st.markdown("""
         color: #ffffff;
     }
 
-    /* Tarjetas ERP interactivas (Efecto Hover Magenta) */
+    /* Tarjetas ERP unificadas en toda la plataforma */
     .erp-card {
-        background-color: #1e1e2f;
-        border: 1px solid #2d2d44;
-        border-radius: 12px;
-        padding: 24px;
+        background: rgba(30, 30, 47, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1.5px solid #00d2ff;
+        border-radius: 16px;
+        padding: 22px;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
         margin-bottom: 15px;
         transition: 0.3s;
     }
     .erp-card:hover {
         border-color: #ff007f;
-        box-shadow: 0 6px 15px rgba(255, 0, 127, 0.3);
+        box-shadow: 0 6px 20px rgba(255, 0, 127, 0.35);
     }
     .erp-title {
         font-size: 16px;
@@ -47,7 +48,7 @@ st.markdown("""
         color: #ffffff;
     }
 
-    /* Contenedor de Login con borde azul brillante */
+    /* Contenedor de Login Estilizado */
     .login-container {
         background: rgba(30, 30, 47, 0.85);
         backdrop-filter: blur(10px);
@@ -71,18 +72,29 @@ st.markdown("""
     
     .login-subtitle {
         font-size: 15px;
-        color: #a0a0c0;
+        color: #ffffff;
         text-align: center;
         margin-bottom: 30px;
     }
 
-    /* Estilo para los inputs y elementos activos en Magenta */
+    /* Forzar texto blanco puro en etiquetas de inputs de Streamlit */
+    .stTextInput label, .stSelectbox label, .stDateInput label {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+
+    /* Estilo para los inputs de texto */
+    .stTextInput input {
+        background-color: #12121c !important;
+        color: white !important;
+        border: 1px solid #2d2d44 !important;
+        border-radius: 8px !important;
+    }
     .stTextInput input:focus {
         border-color: #ff007f !important;
         box-shadow: 0 0 8px rgba(255, 0, 127, 0.5) !important;
     }
     
-    /* Cambiar color de selección/foco en Streamlit a Magenta */
     div.stButton > button:hover {
         border-color: #ff007f !important;
         color: #ff007f !important;
@@ -93,8 +105,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "TU_CEDULA"      
-CLAVE_MASTER = "TU_NOMBRE_FECHA"  
+CEDULA_MASTER = "1032463775"      
+CLAVE_MASTER = "Carolina2026"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -278,7 +290,7 @@ if st.sidebar.button("Cerrar Sesión"):
     st.rerun()
 
 # ==========================================
-# 🗂️ 4. ENRUTADOR DE MÓDULOS (ACCESO DIRECTO POR TARJETA)
+# 🗂️ 4. ENRUTADOR DE MÓDULOS (ESTILO ERP UNIFICADO)
 # ==========================================
 
 if st.session_state.modulo_actual == "Inicio":
@@ -289,7 +301,6 @@ if st.session_state.modulo_actual == "Inicio":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # Tarjeta interactiva de Finanzas que actúa directamente como botón de acceso
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">💰 FINANZAS</div>
@@ -863,7 +874,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
         with col_btn_save:
             if st.button("Guardar Reporte Diario de la Tienda"):
-                df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
+                df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
