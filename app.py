@@ -8,10 +8,18 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno & Login Dinámico)
 # ==========================================
 st.markdown("""
     <style>
+    /* Fondo general dinámico con degradado moderno */
+    .stApp {
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        background-attachment: fixed;
+        color: #ffffff;
+    }
+
+    /* Tarjetas ERP estándar */
     .erp-card {
         background-color: #1e1e2f;
         border: 1px solid #2d2d44;
@@ -38,14 +46,55 @@ st.markdown("""
         font-weight: bold;
         color: #ffffff;
     }
+
+    /* Contenedor de Login Estilizado con Borde Azul Brillante */
+    .login-container {
+        background: rgba(30, 30, 47, 0.85);
+        backdrop-filter: blur(10px);
+        border: 2px solid #00d2ff;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 8px 32px 0 rgba(0, 210, 255, 0.3);
+        max-width: 600px;
+        margin: 50px auto;
+        color: white;
+    }
+    
+    .login-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #ffffff;
+        text-align: center;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .login-subtitle {
+        font-size: 15px;
+        color: #a0a0c0;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    /* Estilo para los inputs dentro del login */
+    .stTextInput input {
+        background-color: #12121c !important;
+        color: white !important;
+        border: 1px solid #2d2d44 !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput input:focus {
+        border-color: #00d2ff !important;
+        box-shadow: 0 0 8px rgba(0, 210, 255, 0.5) !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "TU_CEDULA"      
-CLAVE_MASTER = "TU_NOMBRE_FECHA"  
+CEDULA_MASTER = "1032463775"      
+CLAVE_MASTER = "Carolina2026"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -167,7 +216,7 @@ if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
 
 # ==========================================
-# 🔐 2. SISTEMA DE LOGIN 
+# 🔐 2. SISTEMA DE LOGIN (DISEÑO DINÁMICO)
 # ==========================================
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
@@ -184,12 +233,22 @@ def verificar_credenciales(usuario, password):
     return None, None
 
 if not st.session_state.autenticado:
-    st.title("🔒 Acceso Seguro - Plataforma Operacional Zona 4")
-    st.write("Por favor ingresa tu número de cédula y contraseña.")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # Contenedor con estilo moderno y borde azul brillante
+    st.markdown("""
+        <div class="login-container">
+            <div class="login-title">🍩 Plataforma Operacional Zona 4</div>
+            <div class="login-subtitle">🔒 Acceso Seguro — Ingresa tus credenciales para continuar</div>
+    """, unsafe_allow_html=True)
+    
     with st.form("login_form"):
         usuario_input = st.text_input("Usuario (Número de Cédula):")
         password_input = st.text_input("Contraseña:", type="password")
-        if st.form_submit_button("Ingresar"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        submitted = st.form_submit_button("Ingresar a la Plataforma", use_container_width=True)
+        
+        if submitted:
             rol, cedula = verificar_credenciales(usuario_input, password_input)
             if rol:
                 st.session_state.autenticado = True
@@ -198,6 +257,8 @@ if not st.session_state.autenticado:
                 st.rerun()
             else:
                 st.error("Cédula o contraseña incorrectos.")
+                
+    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 # ==========================================
@@ -306,7 +367,6 @@ elif st.session_state.modulo_actual == "Finanzas":
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
     df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
 
-    # 🗓️ Definición por defecto de corte a D-1
     hoy = datetime.now()
     _, total_dias_mes = calendar.monthrange(anio_sel, mes_num)
     
