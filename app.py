@@ -4,7 +4,7 @@ import calendar
 from datetime import datetime
 from io import BytesIO
 
-st.set_page_config(page_title="Plataforma Operacional", layout="wide")
+st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
 # 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno)
@@ -40,54 +40,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
-def format_currency(value):
-    try:
-        numeric_value = float(value)
-    except (TypeError, ValueError):
-        return "$0"
-    return f"${numeric_value:,.0f}"
-
-
-def safe_divide(numerator, denominator):
-    try:
-        numerator = float(numerator)
-        denominator = float(denominator)
-    except (TypeError, ValueError):
-        return 0.0
-    return numerator / denominator if denominator else 0.0
-
-
-def obtener_ticket_promedio(row):
-    transacciones = pd.to_numeric(row.get("Transacciones / Clientes", 0), errors="coerce")
-    ventas = pd.to_numeric(row.get("Venta Diaria ($)", 0), errors="coerce")
-    if pd.isna(transacciones) or transacciones <= 0:
-        return 0.0
-    return round(float(ventas) / float(transacciones), 0)
-
-
-def metric_card(title, value):
-    return f"""
-        <div class="erp-card">
-            <div class="erp-title">{title}</div>
-            <div class="erp-value">{value}</div>
-        </div>
-    """
-
-
-def guardar_registro_tienda(clave_mes, tienda, df_nuevo):
-    if df_nuevo.empty:
-        return
-
-    df_guardar = df_nuevo.copy()
-    df_guardar["Ticket Promedio ($)"] = df_guardar.apply(obtener_ticket_promedio, axis=1)
-    columas = [col for col in st.session_state.historial_meses[clave_mes].columns if col in df_guardar.columns]
-
-    idx_tienda = st.session_state.historial_meses[clave_mes].index[
-        st.session_state.historial_meses[clave_mes]["Almacén"] == tienda
-    ]
-    st.session_state.historial_meses[clave_mes].loc[idx_tienda, columas] = df_guardar[columas].values
-
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
@@ -121,11 +73,18 @@ if "lista_almacenes_base" not in st.session_state:
         "PV 296 - NIZA CALLE 127"
     ]
 
-if "df_presupuestos" not in st.session_state:
-    st.session_state.df_presupuestos = pd.DataFrame({
-        "Almacén": st.session_state.lista_almacenes_base,
-        "Presupuesto Mes ($)": [15000000.0] * 19
-    })
+# Historial de presupuestos por mes (clave: "YYYY-MM")
+if "historial_presupuestos" not in st.session_state:
+    st.session_state.historial_presupuestos = {}
+
+def obtener_o_crear_presupuesto(anio, mes_num):
+    clave_mes = f"{anio}-{mes_num:02d}"
+    if clave_mes not in st.session_state.historial_presupuestos:
+        st.session_state.historial_presupuestos[clave_mes] = pd.DataFrame({
+            "Almacén": st.session_state.lista_almacenes_base,
+            "Presupuesto Mes ($)": [15000000.0] * len(st.session_state.lista_almacenes_base)
+        })
+    return st.session_state.historial_presupuestos[clave_mes]
 
 if "historial_meses" not in st.session_state:
     st.session_state.historial_meses = {}
@@ -185,7 +144,7 @@ def verificar_credenciales(usuario, password):
     return None, None
 
 if not st.session_state.autenticado:
-    st.title("🔒 Acceso Seguro - Plataforma Zona 4")
+    st.title("🔒 Acceso Seguro - Plataforma Operacional Zona 4")
     st.write("Por favor ingresa tu número de cédula y contraseña.")
     with st.form("login_form"):
         usuario_input = st.text_input("Usuario (Número de Cédula):")
@@ -224,7 +183,7 @@ if st.sidebar.button("Cerrar Sesión"):
 # ==========================================
 
 if st.session_state.modulo_actual == "Inicio":
-    st.title("🍩 Dashboard FIDES Analytics - Zona 4")
+    st.title("🍩 Plataforma Operacional - Zona 4 Dunkin")
     st.write("Selecciona el módulo de gestión que deseas operar:")
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -302,12 +261,12 @@ elif st.session_state.modulo_actual == "Finanzas":
         mes_num = [k for k, v in meses_nombres.items() if v == mes_sel_nombre][0]
 
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
+    df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
 
-    def obtener_consolidado(df_mes):
+    def obtener_consolidado(df_mes, df_presup):
         suma_mes = df_mes.groupby("Almacén")[["Venta Diaria ($)", "Transacciones / Clientes", "Unidades Vendidas", "Desperdicio (Unid)"]].sum().reset_index()
-        consolidado = pd.merge(st.session_state.df_presupuestos, suma_mes, on="Almacén")
+        consolidado = pd.merge(df_presup, suma_mes, on="Almacén")
         
-        # Ticket Promedio Consolidado del Mes
         consolidado["Ticket Promedio ($)"] = consolidado.apply(
             lambda row: row["Venta Diaria ($)"] / row["Transacciones / Clientes"] if row["Transacciones / Clientes"] > 0 else 0.0,
             axis=1
@@ -323,17 +282,16 @@ elif st.session_state.modulo_actual == "Finanzas":
         consolidado["Unidades Vendidas"] = consolidado["Unidades Vendidas"].round(0).astype(int)
         return consolidado
 
-    df_consolidado = obtener_consolidado(df_mes_activo)
+    df_consolidado = obtener_consolidado(df_mes_activo, df_presupuesto_activo)
 
-    def calcular_metricas_globales(df_con):
+    def calcular_metricas_globales(df_con, df_presup):
         total_venta = df_con["Venta Acumulada Mes ($)"].sum()
-        total_presupuesto = df_con["Presupuesto Mes ($)"].sum()
+        total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
         cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
         
         total_transacciones = df_mes_activo["Transacciones / Clientes"].sum()
         ticket_prom_zona = (total_venta / total_transacciones) if total_transacciones > 0 else 0.0
         
-        # % Desperdicio Zona = Desperdicio Total Unidades / Unidades Vendidas Totales
         total_unid_zona = df_con["Unidades Vendidas"].sum()
         total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
         pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
@@ -341,12 +299,12 @@ elif st.session_state.modulo_actual == "Finanzas":
         return total_venta, cumplimiento, pct_desp_zona, ticket_prom_zona
 
     if st.session_state.usuario_rol == "Master":
-        tab_resumen, tab_individual, tab_excel = st.tabs([
-            f"📋 Consolidado General ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
+        tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
+            f"📋 Consolidado General ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
         ])
         
         with tab_resumen:
-            t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona = calcular_metricas_globales(df_consolidado)
+            t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
             
             st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()})")
             col_k1, col_k2, col_k3, col_k4 = st.columns(4)
@@ -385,7 +343,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_mostrar = df_consolidado.copy()
             df_mostrar["% Cumplimiento"] = (df_mostrar["Venta Acumulada Mes ($)"] / df_mostrar["Presupuesto Mes ($)"] * 100)
             
-            # Columna calculada de % Desperdicio por Fila en el Consolidado: Desperdicio Acumulado / Unidades Vendidas
             df_mostrar["% Desperdicio"] = df_mostrar.apply(
                 lambda row: (row["Desperdicio Acumulado (Unid)"] / row["Unidades Vendidas"] * 100) if row["Unidades Vendidas"] > 0 else 0.0,
                 axis=1
@@ -417,12 +374,24 @@ elif st.session_state.modulo_actual == "Finanzas":
             st.markdown("### 📊 Semáforo de Cumplimiento Consolidado")
             df_estilizado = df_para_mostrar.style.map(color_semaforo, subset=['% Cumplimiento Promedio'])
             st.dataframe(df_estilizado, use_container_width=True)
+
+        with tab_presupuestos:
+            st.subheader(f"⚙️ Edición de Presupuestos - {mes_sel_nombre} {anio_sel}")
+            st.write("Modifica directamente los presupuestos asignados a cada punto de venta para este mes:")
+            
+            df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", key=f"editor_presup_{anio_sel}_{mes_num}")
+            
+            if st.button("Guardar Nuevos Presupuestos del Mes"):
+                clave_mes = f"{anio_sel}-{mes_num:02d}"
+                st.session_state.historial_presupuestos[clave_mes] = df_presup_edit
+                st.success(f"¡Presupuestos de {mes_sel_nombre} {anio_sel} actualizados con éxito!")
+                st.rerun()
             
         with tab_individual:
             st.subheader(f"Registro Diario por Tienda - {mes_sel_nombre} {anio_sel}")
             almacen_sel = st.selectbox("Selecciona el almacén a auditar / operar:", st.session_state.lista_almacenes_base)
             
-            presupuesto_tienda = float(st.session_state.df_presupuestos[st.session_state.df_presupuestos["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
+            presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
             df_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == almacen_sel].copy()
             
             venta_tienda = df_tienda_diario["Venta Diaria ($)"].sum()
@@ -525,7 +494,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         ced = st.session_state.cedula_actual
         tienda = st.session_state.db_admins[ced]["tienda"]
         
-        presupuesto_tienda = float(st.session_state.df_presupuestos[st.session_state.df_presupuestos["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
+        presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
         df_mi_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == tienda].copy()
         
         v_tienda = df_mi_tienda_diario["Venta Diaria ($)"].sum()
