@@ -44,8 +44,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -360,6 +360,10 @@ elif st.session_state.modulo_actual == "Finanzas":
         total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
         cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
         
+        # Meta presupuestada acumulada a la fecha de corte D-1
+        total_presupuesto_zona = total_presupuesto
+        meta_acumulada_a_la_fecha = (total_presupuesto_zona / total_dias_mes) * dia_corte
+        
         total_transacciones = df_mes_corte["Transacciones / Clientes"].sum()
         ticket_prom_zona = (total_venta / total_transacciones) if total_transacciones > 0 else 0.0
         
@@ -367,7 +371,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
         pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
         
-        return total_venta, cumplimiento, pct_desp_zona, ticket_prom_zona
+        return total_venta, cumplimiento, pct_desp_zona, ticket_prom_zona, meta_acumulada_a_la_fecha
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
@@ -375,7 +379,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         ])
         
         with tab_resumen:
-            t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
+            t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
             
             st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel}) — Corte D-1 al Día {dia_corte} ({pct_meta_tiempo:.1f}% del mes)")
             col_k1, col_k2, col_k3, col_k4 = st.columns(4)
@@ -384,6 +388,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">💰 VENTA ACUMULADA (Corte D-1)</div>
                         <div class="erp-value">${t_venta:,.0f}</div>
+                        <div style="font-size: 12px; color: #ffb74d; margin-top: 5px;">Meta Presupuestada a la Fecha: ${meta_fecha_zona:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k2:
@@ -502,6 +507,8 @@ elif st.session_state.modulo_actual == "Finanzas":
             almacen_sel = st.selectbox("Selecciona el almacén a auditar / operar:", st.session_state.lista_almacenes_base)
             
             presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
+            meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte
+            
             venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel][col_vp_nombre].values[0])
             venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte
             
@@ -525,6 +532,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">💰 VENTA ACUMULADA (Corte)</div>
                         <div class="erp-value">${venta_tienda:,.0f}</div>
+                        <div style="font-size: 12px; color: #ffb74d; margin-top: 5px;">Meta Presupuestada: ${meta_presup_tienda_fecha:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t2:
@@ -611,6 +619,8 @@ elif st.session_state.modulo_actual == "Finanzas":
         tienda = st.session_state.db_admins[ced]["tienda"]
         
         presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
+        meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte
+        
         venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda][col_vp_nombre].values[0])
         venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte
         
@@ -635,6 +645,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 <div class="erp-card">
                     <div class="erp-title">💰 VENTA ACUMULADA</div>
                     <div class="erp-value">${v_tienda:,.0f}</div>
+                    <div style="font-size: 12px; color: #ffb74d; margin-top: 5px;">Meta Presupuestada: ${meta_presup_tienda_fecha:,.0f}</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad2:
