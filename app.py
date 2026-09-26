@@ -84,14 +84,11 @@ if not os.path.exists(DIR_DATOS):
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
     ruta_csv = os.path.join(DIR_DATOS, f"presupuesto_{clave_mes}.csv")
-    
     col_venta_pasada = f"Venta Mes {anio - 1} ($)"
     
     if os.path.exists(ruta_csv):
         df_existente = pd.read_csv(ruta_csv)
-        # Si la columna antigua se llamaba diferente o no existe, la adaptamos al año anterior dinámico
         if col_venta_pasada not in df_existente.columns:
-            # Buscar si existe alguna columna vieja de venta año anterior para migrar datos
             col_vieja = [c for c in df_existente.columns if "Venta Mes" in c and str(anio - 1) in c]
             if col_vieja:
                 df_existente.rename(columns={col_vieja[0]: col_venta_pasada}, inplace=True)
@@ -347,7 +344,7 @@ elif st.session_state.modulo_actual == "Finanzas":
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
-            f"📋 Consolidado General ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & Venta {anio_pasado} ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
+            f"📋 Análisis Integral de Almacenes ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & Venta {anio_pasado} ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
         ])
         
         with tab_resumen:
@@ -385,12 +382,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                 """, unsafe_allow_html=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader(f"Cuadro Consolidado Acumulado & Comparativo {anio_sel} vs {anio_pasado} - {mes_sel_nombre}")
+            st.subheader(f"Análisis Integral de Almacenes & Comparativo {anio_sel} vs {anio_pasado} - {mes_sel_nombre}")
             
             df_mostrar = df_consolidado.copy()
             df_mostrar["% Cumplimiento"] = (df_mostrar["Venta Acumulada Mes ($)"] / df_mostrar["Presupuesto Mes ($)"] * 100)
             
-            # Fórmula exacta solicitada: ((Venta Actual - Venta Año Pasado) / Venta Año Pasado) * 100
+            # Fórmula de crecimiento: ((Venta Actual - Venta Año Pasado) / Venta Año Pasado) * 100
             df_mostrar["% Crecimiento Dinamico"] = df_mostrar.apply(
                 lambda row: ((row["Venta Acumulada Mes ($)"] - row[col_vp_nombre]) / row[col_vp_nombre] * 100) if row[col_vp_nombre] > 0 else 0.0,
                 axis=1
@@ -420,20 +417,51 @@ elif st.session_state.modulo_actual == "Finanzas":
                 "Desperdicio Acumulado (Unid)", "% Desperdicio Fila", "% Cumplimiento Promedio"
             ]]
 
-            def color_crecimiento(val):
+            # Semáforo múltiple condicional para Cumplimiento, Crecimiento y Desperdicio (máximo 10%)
+            def color_semaforo_integral(row):
+                estilos = [''] * len(row)
+                
+                # Columna % Desperdicio Fila (Índice 8)
                 try:
-                    num = float(val.replace('%', '').strip())
+                    val_desp = float(row['% Desperdicio Fila'].replace('%', '').strip())
+                    idx_desp = row.index.get_loc('% Desperdicio Fila')
+                    if val_desp <= 10.0:
+                        estilos[idx_desp] = 'background-color: #d4edda; color: #155724; font-weight: bold;' # Verde <= 10%
+                    else:
+                        estilos[idx_desp] = 'background-color: #f8d7da; color: #721c24; font-weight: bold;' # Rojo > 10%
                 except:
-                    num = 0.0
-                if num > 0:
-                    return 'background-color: #d4edda; color: #155724; font-weight: bold;' # Verde positivo
-                elif num < 0:
-                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold;' # Rojo decrecimiento
-                else:
-                    return 'background-color: #e2e3e5; color: #383d41; font-weight: bold;' # Neutro 0%
+                    pass
 
-            st.markdown(f"### 📊 Semáforo Dinámico de Crecimiento ({anio_sel} vs {anio_pasado})")
-            df_estilizado = df_para_mostrar.style.map(color_crecimiento, subset=[col_crecimiento_titulo])
+                # Columna % Cumplimiento Promedio (Índice 9)
+                try:
+                    val_cump = float(row['% Cumplimiento Promedio'].replace('%', '').strip())
+                    idx_cump = row.index.get_loc('% Cumplimiento Promedio')
+                    if val_cump >= 100:
+                        estilos[idx_cump] = 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                    elif val_cump >= 85:
+                        estilos[idx_cump] = 'background-color: #fff3cd; color: #856404; font-weight: bold;'
+                    else:
+                        estilos[idx_cump] = 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+                except:
+                    pass
+
+                # Columna de Crecimiento Dinámico
+                try:
+                    val_crec = float(row[col_crecimiento_titulo].replace('%', '').strip())
+                    idx_crec = row.index.get_loc(col_crecimiento_titulo)
+                    if val_crec > 0:
+                        estilos[idx_crec] = 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                    elif val_crec < 0:
+                        estilos[idx_crec] = 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+                    else:
+                        estilos[idx_crec] = 'background-color: #e2e3e5; color: #383d41; font-weight: bold;'
+                except:
+                    pass
+
+                return estilos
+
+            st.markdown(f"### 📊 Semáforo de Control Integral (Almacenes)")
+            df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
             st.dataframe(df_estilizado, use_container_width=True)
 
         with tab_presupuestos:
@@ -491,10 +519,11 @@ elif st.session_state.modulo_actual == "Finanzas":
                     </div>
                 """, unsafe_allow_html=True)
             with col_t4:
+                color_desp_card = "#28a745" if pct_desp_tienda <= 10.0 else "#dc3545"
                 st.markdown(f"""
                     <div class="erp-card">
                         <div class="erp-title">⚠️ % DESPERDICIO</div>
-                        <div class="erp-value">{pct_desp_tienda:.2f}%</div>
+                        <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -597,10 +626,11 @@ elif st.session_state.modulo_actual == "Finanzas":
                 </div>
             """, unsafe_allow_html=True)
         with col_ad4:
+            color_desp_card = "#28a745" if pct_desp_tienda <= 10.0 else "#dc3545"
             st.markdown(f"""
                 <div class="erp-card">
                     <div class="erp-title">⚠️ % DESPERDICIO</div>
-                    <div class="erp-value">{pct_desp_tienda:.2f}%</div>
+                    <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
                 </div>
             """, unsafe_allow_html=True)
 
