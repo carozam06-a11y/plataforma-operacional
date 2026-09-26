@@ -898,7 +898,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_edit
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
                 guardar_mes(anio_sel, mes_num, df_mes_activo)
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
@@ -942,11 +942,10 @@ elif st.session_state.modulo_actual == "EOR":
     if not os.path.exists(EXCEL_EOR_MAESTRO):
         st.error(f"⚠️ No se encontró el archivo maestro '{EXCEL_EOR_MAESTRO}' en el directorio. Asegúrate de colocarlo en la misma carpeta del proyecto.")
     else:
-        wb_ maestro = openpyxl.load_workbook(EXCEL_EOR_MAESTRO, data_only=True)
+        wb_maestro = openpyxl.load_workbook(EXCEL_EOR_MAESTRO, data_only=True)
         sheet_rev = wb_maestro[' Revisión de operaciones']
 
         # Extraer estructura de ítems desde la hoja ' Revisión de operaciones'
-        # Buscamos las filas con categorías e ítems
         preguntas_eor = []
         cat_actual = ""
         
@@ -989,7 +988,6 @@ elif st.session_state.modulo_actual == "EOR":
                 st.markdown(f"**[{item['Id']}]** {item['Pregunta']}")
                 c_val, c_obs = st.columns([1, 2])
                 with c_val:
-                    # Opciones estándar inspiradas en el Excel
                     calif = st.selectbox("Cumplimiento:", ["Sí", "No", "N/A"], key=f"eor_val_{idx}")
                 with c_obs:
                     obs = st.text_input("Observación / Justificación (Por qué cumple o no):", key=f"eor_obs_{idx}", placeholder="Escribe aquí el motivo o hallazgo...")
@@ -1007,16 +1005,13 @@ elif st.session_state.modulo_actual == "EOR":
             
             if submitted_eor_real:
                 try:
-                    # Abrir el libro con openpyxl en modo escritura para actualizar hojas
                     wb_mod = openpyxl.load_workbook(EXCEL_EOR_MAESTRO)
                     
-                    # Generar nombres de pestañas basados en la tienda (ej: 'EOR PV 180' y 'P.A. PV 180')
                     codigo_tienda_str = tienda_auditada.split(" - ")[0].strip()
                     nombre_hoja_eor = f"EOR {codigo_tienda_str}"
                     nombre_hoja_pa = f"P.A. {codigo_tienda_str}"
                     
                     if nombre_hoja_eor not in wb_mod.sheetnames:
-                        # Si no existe exactamente, crearla duplicando o usando la estructura
                         ws_nueva_eor = wb_mod.create_sheet(title=nombre_hoja_eor)
                     else:
                         ws_nueva_eor = wb_mod[nombre_hoja_eor]
@@ -1026,17 +1021,14 @@ elif st.session_state.modulo_actual == "EOR":
                     else:
                         ws_nueva_pa = wb_mod[nombre_hoja_pa]
 
-                    # Actualizar metadatos en la hoja de EOR de la tienda
                     ws_nueva_eor['C2'] = tienda_auditada
                     ws_nueva_eor['C3'] = f"{responsable_tienda} - {auditor_nombre}"
                     ws_nueva_eor['C4'] = datetime.combine(fecha_auditoria, datetime.min.time())
 
-                    # Recopilar brechas (respuestas "No") para el Plan de Acción
                     brechas = [r for r in respuestas_usuario if r["Calificacion"] == "No"]
                     
-                    # Llenar Plan de Acción en la pestaña P.A. PV XXX
                     ws_nueva_pa['A1'] = "Plan de Acción — Mejora Continua EOR Zona 4"
-                    ws_nueva_pa['A3'] = "Acción correctiva / Plan de acción"
+                    ws_nueva_pa['A3'] = "Accion correctiva / Plan de accion"
                     ws_nueva_pa['B3'] = "Responsable"
                     ws_nueva_pa['C3'] = "Fecha de ejecucion prevista"
                     ws_nueva_pa['D3'] = "Comentarios / Hallazgos"
