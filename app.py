@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Compactar Columnas & Ocultar Índice)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Ocultar Índices & Compactar Tablas)
 # ==========================================
 st.markdown("""
     <style>
@@ -127,17 +127,14 @@ st.markdown("""
         color: white !important;
     }
 
-    /* 📊 Compactar tablas y ocultar columna de índices (números de fila) */
-    [data-testid="stDataFrame"] th {
+    /* 📊 Compactar tablas y ocultar por completo la primera columna de números (índice) */
+    [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         font-size: 13px !important;
-        padding: 6px 8px !important;
+        padding: 4px 6px !important;
     }
-    [data-testid="stDataFrame"] td {
-        font-size: 13px !important;
-        padding: 5px 8px !important;
-    }
-    /* Ocultar la celda de índice numérica en los dataframes renderizados */
-    [data-testid="stDataFrame"] [data-testid="StyledFullScreenButton"] ~ div div[role="row"] > div:first-child {
+    /* Ocultar la columna de índice en todas las tablas de Streamlit */
+    [data-testid="stDataFrame"] table tr th:first-child,
+    [data-testid="stDataFrame"] table tr td:first-child {
         display: none !important;
     }
     </style>
@@ -146,8 +143,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -307,7 +304,7 @@ if not st.session_state.autenticado:
                 st.session_state.cedula_actual = cedula
                 st.rerun()
             else:
-                st.error("Cédula o contraseña incorrectos.")
+                st.error("Cédula ou contraseña incorrectos.")
                 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -648,8 +645,23 @@ elif st.session_state.modulo_actual == "Finanzas":
                 return estilos
 
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
-            # Usamos hide(axis="index") para ocultar el índice nativamente
-            st.dataframe(df_estilizado.hide(axis="index"), use_container_width=True)
+            
+            # Usamos column_config para fijar anchos compactos y evitar que se expandan demasiado
+            column_config_dict = {
+                "Almacén": st.column_config.TextColumn("Almacén", width="medium"),
+                "Presupuesto Mes ($)": st.column_config.TextColumn("Presupuesto Mes ($)", width="small"),
+                col_vp_nombre: st.column_config.TextColumn(col_vp_nombre, width="small"),
+                "Venta Proporcional Año Pasado ($)": st.column_config.TextColumn("Venta Prop. Año Pasado", width="small"),
+                "Venta Acumulada Rango ($)": st.column_config.TextColumn("Venta Acum. Rango", width="small"),
+                "Ticket Promedio ($)": st.column_config.TextColumn("Ticket Promedio", width="small"),
+                "Unidades Vendidas": st.column_config.TextColumn("Unid. Vendidas", width="small"),
+                "Desperdicio Acumulado (Unid)": st.column_config.TextColumn("Desperdicio", width="small"),
+                "% Desperdicio Fila": st.column_config.TextColumn("% Desp.", width="small"),
+                "% Cumplimiento Rango Fila": st.column_config.TextColumn("% Cump.", width="small"),
+                col_crecimiento_titulo: st.column_config.TextColumn("% Crec.", width="small"),
+            }
+
+            st.dataframe(df_estilizado, use_container_width=True, column_config=column_config_dict, hide_index=True)
 
             output_integral = BytesIO()
             with pd.ExcelWriter(output_integral, engine='openpyxl') as writer:
