@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Tarjetas de Altura Uniforme & Bordes Cian)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Compactar Columnas & Ocultar Índice)
 # ==========================================
 st.markdown("""
     <style>
@@ -126,14 +126,28 @@ st.markdown("""
         background-color: #0077b6 !important;
         color: white !important;
     }
+
+    /* 📊 Compactar tablas y ocultar columna de índices (números de fila) */
+    [data-testid="stDataFrame"] th {
+        font-size: 13px !important;
+        padding: 6px 8px !important;
+    }
+    [data-testid="stDataFrame"] td {
+        font-size: 13px !important;
+        padding: 5px 8px !important;
+    }
+    /* Ocultar la celda de índice numérica en los dataframes renderizados */
+    [data-testid="stDataFrame"] [data-testid="StyledFullScreenButton"] ~ div div[role="row"] > div:first-child {
+        display: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -634,7 +648,8 @@ elif st.session_state.modulo_actual == "Finanzas":
                 return estilos
 
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
-            st.dataframe(df_estilizado, use_container_width=True)
+            # Usamos hide(axis="index") para ocultar el índice nativamente
+            st.dataframe(df_estilizado.hide(axis="index"), use_container_width=True)
 
             output_integral = BytesIO()
             with pd.ExcelWriter(output_integral, engine='openpyxl') as writer:
@@ -652,7 +667,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             st.subheader(f"⚙️ Configuración de Presupuestos & Venta {anio_pasado} - {mes_sel_nombre} {anio_sel}")
             st.write(f"Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año **{anio_pasado}**:")
             
-            df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", key=f"editor_presup_{anio_sel}_{mes_num}")
+            df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", hide_index=True, key=f"editor_presup_{anio_sel}_{mes_num}")
             
             col_p_save, col_p_dl, col_p_ul = st.columns(3)
             with col_p_save:
@@ -771,7 +786,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 axis=1
             )
             
-            df_diario_edit = st.data_editor(df_tienda_diario, num_rows="fixed", key=f"edit_diario_{almacen_sel}_{anio_sel}_{mes_num}")
+            df_diario_edit = st.data_editor(df_tienda_diario, num_rows="fixed", hide_index=True, key=f"edit_diario_{almacen_sel}_{anio_sel}_{mes_num}")
             
             col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
             with col_btn_save:
@@ -903,7 +918,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             axis=1
         )
         
-        df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", key=f"admin_diario_{tienda}_{anio_sel}_{mes_num}")
+        df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", hide_index=True, key=f"admin_diario_{tienda}_{anio_sel}_{mes_num}")
         
         col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
         with col_btn_save:
