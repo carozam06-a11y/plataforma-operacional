@@ -251,24 +251,29 @@ def guardar_mes(anio, mes_num, df):
     df.to_csv(ruta_csv, index=False)
 
 def escribir_celda_segura(sheet, coordenada, valor):
-    """Evita errores de celdas combinadas (MergedCell) asignando al rango principal de forma infalible."""
+    """Escribe en una celda asegurándose de saltar cualquier restricción de celdas combinadas."""
     try:
         celda = sheet[coordenada]
         if isinstance(celda, MergedCell):
-            encontrado = False
             for rango in list(sheet.merged_cells.ranges):
                 if coordenada in rango:
                     min_row, min_col, _, _ = rango.bounds
                     sheet.cell(row=min_row, column=min_col, value=valor)
-                    encontrado = True
-                    break
-            if not encontrado:
-                sheet[coordenada] = valor
-        else:
-            sheet[coordenada] = valor
+                    return
+        sheet[coordenada] = valor
     except Exception:
-        # Si ocurre cualquier anomalía con la celda, accedemos directo por coordenadas estándar
-        pass
+        # En caso de celdas combinadas persistentes, descomponemos la coordenada (ej: 'C2' -> fila 2, col 3)
+        import openpyxl.utils
+        col_letra = ''.join([c for c in coordenada if c.isalpha()])
+        row_num = int(''.join([c for c in coordenada if c.isdigit()]))
+        col_num = openpyxl.utils.column_index_from_string(col_letra)
+        
+        # Buscar si pertenece a algún rango y descombinarlo temporalmente o escribir en celda base
+        for rango in list(sheet.merged_cells.ranges):
+            if row_num >= rango.min_row and row_num <= rango.max_row and col_num >= rango.min_col and col_num <= rango.max_col:
+                sheet.cell(row=rango.min_row, column=rango.min_col, value=valor)
+                return
+        sheet.cell(row=row_num, column=col_num, value=valor)
 
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
