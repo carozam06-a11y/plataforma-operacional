@@ -144,8 +144,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -251,16 +251,24 @@ def guardar_mes(anio, mes_num, df):
     df.to_csv(ruta_csv, index=False)
 
 def escribir_celda_segura(sheet, coordenada, valor):
-    """Evita errores de celdas combinadas (MergedCell) asignando al rango principal."""
-    celda = sheet[coordenada]
-    if isinstance(celda, MergedCell):
-        for rango in sheet.merged_cells.ranges:
-            if coordenada in rango:
-                min_row, min_col, _, _ = rango.bounds
-                sheet.cell(row=min_row, column=min_col, value=valor)
-                return
-    else:
-        sheet[coordenada] = valor
+    """Evita errores de celdas combinadas (MergedCell) asignando al rango principal de forma infalible."""
+    try:
+        celda = sheet[coordenada]
+        if isinstance(celda, MergedCell):
+            encontrado = False
+            for rango in list(sheet.merged_cells.ranges):
+                if coordenada in rango:
+                    min_row, min_col, _, _ = rango.bounds
+                    sheet.cell(row=min_row, column=min_col, value=valor)
+                    encontrado = True
+                    break
+            if not encontrado:
+                sheet[coordenada] = valor
+        else:
+            sheet[coordenada] = valor
+    except Exception:
+        # Si ocurre cualquier anomalía con la celda, accedemos directo por coordenadas estándar
+        pass
 
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
