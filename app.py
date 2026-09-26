@@ -286,7 +286,7 @@ if not st.session_state.autenticado:
 # 🖥️ 3. BARRA LATERAL (NAVEGACIÓN)
 # ==========================================
 if st.session_state.usuario_rol == "Master":
-    nombre_mostrar = "Master 👑"
+    nombre_mostrar = "Carolina Zamora (Consultora)"
 else:
     nombre_mostrar = st.session_state.db_admins[st.session_state.cedula_actual]["nombre"]
 
