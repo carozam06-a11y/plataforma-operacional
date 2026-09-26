@@ -259,7 +259,7 @@ if st.session_state.modulo_actual == "Inicio":
                 <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Turnos, HeadCount & Rotación Admins</div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("Abrir Módulo Planilla", use_container_width=Thread := True):
+        if st.button("Abrir Módulo Planilla", use_container_width=True):
             st.session_state.modulo_actual = "Planilla"
             st.rerun()
             
@@ -322,7 +322,6 @@ elif st.session_state.modulo_actual == "Finanzas":
     # Filtrar datos de DataFrame hasta el día de corte D-1
     def filtrar_hasta_corte(df):
         df_copia = df.copy()
-        # Extraer el día de la cadena "YYYY-MM-DD - Día"
         df_copia["Dia_Num"] = df_copia["Fecha y Día"].apply(lambda x: int(x.split(" ")[0].split("-")[2]))
         return df_copia[df_copia["Dia_Num"] <= dia_corte]
 
@@ -337,8 +336,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             axis=1
         )
         
-        # Cálculo de la venta del año pasado proporcional a la misma fecha de corte (D-1)
-        # Venta prorrateada a la fecha = (Venta Total Año Pasado / Total Días del Mes) * Día de Corte
         consolidado["Venta Proporcional Año Pasado ($)"] = consolidado.apply(
             lambda row: (row[col_vp_nombre] / total_dias_mes) * dia_corte,
             axis=1
@@ -404,7 +401,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                     </div>
                 """, unsafe_allow_html=True)
             with col_k4:
-                meta_desp_proporcional = pct_meta_tiempo * 0.10 # Meta esperada a la fecha de corte
                 color_tarjeta_desp = "#28a745" if t_pct_desp_zona <= 10.0 else "#dc3545"
                 st.markdown(f"""
                     <div class="erp-card">
@@ -421,7 +417,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_mostrar = df_consolidado.copy()
             df_mostrar["% Cumplimiento"] = (df_mostrar["Venta Acumulada Mes ($)"] / df_mostrar["Presupuesto Mes ($)"] * 100)
             
-            # Crecimiento comparado contra la venta proporcional a la misma fecha del año anterior
             df_mostrar["% Crecimiento Dinamico"] = df_mostrar.apply(
                 lambda row: ((row["Venta Acumulada Mes ($)"] - row["Venta Proporcional Año Pasado ($)"]) / row["Venta Proporcional Año Pasado ($)"] * 100) if row["Venta Proporcional Año Pasado ($)"] > 0 else 0.0,
                 axis=1
@@ -446,29 +441,21 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_formato["% Cumplimiento Promedio"] = df_formato["% Cumplimiento"].apply(lambda x: f"{x:.2f}%")
             df_formato[col_crecimiento_titulo] = df_mostrar["% Crecimiento Dinamico"].apply(lambda x: f"{x:.2f}%")
             
-            # Tabla final con orden optimizado y columna de crecimiento al final
             df_para_mostrar = df_formato[[
                 "Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Proporcional Año Pasado ($)", 
                 "Venta Acumulada Mes ($)", "Ticket Promedio ($)", "Unidades Vendidas", 
                 "Desperdicio Acumulado (Unid)", "% Desperdicio Fila", "% Cumplimiento Promedio", col_crecimiento_titulo
             ]]
 
-            # Semáforo dinámico múltiple
             def color_semaforo_integral(row):
                 estilos = [''] * len(row)
-                
-                # % Desperdicio (Límite 10%)
                 try:
                     val_desp = float(row['% Desperdicio Fila'].replace('%', '').strip())
                     idx_desp = row.index.get_loc('% Desperdicio Fila')
-                    if val_desp <= 10.0:
-                        estilos[idx_desp] = 'background-color: #d4edda; color: #155724; font-weight: bold;'
-                    else:
-                        estilos[idx_desp] = 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+                    estilos[idx_desp] = 'background-color: #d4edda; color: #155724; font-weight: bold;' if val_desp <= 10.0 else 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
                 except:
                     pass
 
-                # % Cumplimiento
                 try:
                     val_cump = float(row['% Cumplimiento Promedio'].replace('%', '').strip())
                     idx_cump = row.index.get_loc('% Cumplimiento Promedio')
@@ -481,7 +468,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                 except:
                     pass
 
-                # Crecimiento a la fecha
                 try:
                     val_crec = float(row[col_crecimiento_titulo].replace('%', '').strip())
                     idx_crec = row.index.get_loc(col_crecimiento_titulo)
