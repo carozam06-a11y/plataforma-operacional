@@ -180,7 +180,7 @@ DIR_DATOS = "datos_persistencia"
 if not os.path.exists(DIR_DATOS):
     os.makedirs(DIR_DATOS)
 
-EXCEL_EOR_MAESTRO = "EOR SEPTIEMBRE 2026.xlsx"
+EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
