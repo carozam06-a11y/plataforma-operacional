@@ -85,18 +85,25 @@ def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
     ruta_csv = os.path.join(DIR_DATOS, f"presupuesto_{clave_mes}.csv")
     
+    col_venta_pasada = f"Venta Mes {anio - 1} ($)"
+    
     if os.path.exists(ruta_csv):
         df_existente = pd.read_csv(ruta_csv)
-        # Asegurar compatibilidad si el archivo antiguo no tenía la columna de 2025
-        if "Venta Mes 2025 ($)" not in df_existente.columns:
-            df_existente["Venta Mes 2025 ($)"] = 0.0
+        # Si la columna antigua se llamaba diferente o no existe, la adaptamos al año anterior dinámico
+        if col_venta_pasada not in df_existente.columns:
+            # Buscar si existe alguna columna vieja de venta año anterior para migrar datos
+            col_vieja = [c for c in df_existente.columns if "Venta Mes" in c and str(anio - 1) in c]
+            if col_vieja:
+                df_existente.rename(columns={col_vieja[0]: col_venta_pasada}, inplace=True)
+            else:
+                df_existente[col_venta_pasada] = 0.0
             df_existente.to_csv(ruta_csv, index=False)
         return df_existente
     else:
         df_nuevo = pd.DataFrame({
             "Almacén": st.session_state.lista_almacenes_base,
             "Presupuesto Mes ($)": [15000000.0] * len(st.session_state.lista_almacenes_base),
-            "Venta Mes 2025 ($)": [0.0] * len(st.session_state.lista_almacenes_base)
+            col_venta_pasada: [0.0] * len(st.session_state.lista_almacenes_base)
         })
         df_nuevo.to_csv(ruta_csv, index=False)
         return df_nuevo
@@ -292,9 +299,12 @@ elif st.session_state.modulo_actual == "Finanzas":
             1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
             7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
         }
-        anio_sel = st.selectbox("Año:", [2025, 2026, 2027], index=1)
+        anio_sel = st.selectbox("Año Actual:", [2025, 2026, 2027, 2028], index=1)
         mes_sel_nombre = st.selectbox("Selecciona el Mes a Consultar / Operar:", list(meses_nombres.values()), index=8)
         mes_num = [k for k, v in meses_nombres.items() if v == mes_sel_nombre][0]
+
+    anio_pasado = anio_sel - 1
+    col_vp_nombre = f"Venta Mes {anio_pasado} ($)"
 
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
     df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
@@ -308,11 +318,11 @@ elif st.session_state.modulo_actual == "Finanzas":
             axis=1
         )
         
-        consolidado = consolidado[["Almacén", "Presupuesto Mes ($)", "Venta Mes 2025 ($)", "Venta Diaria ($)", "Ticket Promedio ($)", "Unidades Vendidas", "Desperdicio (Unid)"]]
+        consolidado = consolidado[["Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Diaria ($)", "Ticket Promedio ($)", "Unidades Vendidas", "Desperdicio (Unid)"]]
         consolidado.rename(columns={"Venta Diaria ($)": "Venta Acumulada Mes ($)", "Desperdicio (Unid)": "Desperdicio Acumulado (Unid)"}, inplace=True)
         
         consolidado["Presupuesto Mes ($)"] = consolidado["Presupuesto Mes ($)"].round(0)
-        consolidado["Venta Mes 2025 ($)"] = consolidado["Venta Mes 2025 ($)"].round(0)
+        consolidado[col_vp_nombre] = consolidado[col_vp_nombre].round(0)
         consolidado["Venta Acumulada Mes ($)"] = consolidado["Venta Acumulada Mes ($)"].round(0)
         consolidado["Ticket Promedio ($)"] = consolidado["Ticket Promedio ($)"].round(0)
         consolidado["Desperdicio Acumulado (Unid)"] = consolidado["Desperdicio Acumulado (Unid)"].round(0).astype(int)
@@ -337,13 +347,13 @@ elif st.session_state.modulo_actual == "Finanzas":
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
-            f"📋 Consolidado General ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & 2025 ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
+            f"📋 Consolidado General ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & Venta {anio_pasado} ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
         ])
         
         with tab_resumen:
             t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
             
-            st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()})")
+            st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel})")
             col_k1, col_k2, col_k3, col_k4 = st.columns(4)
             with col_k1:
                 st.markdown(f"""
@@ -375,14 +385,14 @@ elif st.session_state.modulo_actual == "Finanzas":
                 """, unsafe_allow_html=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.subheader(f"Cuadro Consolidado Acumulado & Comparativo 2025 - {mes_sel_nombre} {anio_sel}")
+            st.subheader(f"Cuadro Consolidado Acumulado & Comparativo {anio_sel} vs {anio_pasado} - {mes_sel_nombre}")
             
             df_mostrar = df_consolidado.copy()
             df_mostrar["% Cumplimiento"] = (df_mostrar["Venta Acumulada Mes ($)"] / df_mostrar["Presupuesto Mes ($)"] * 100)
             
-            # Cálculo de crecimiento vs 2025
-            df_mostrar["% Crecimiento vs 2025"] = df_mostrar.apply(
-                lambda row: ((row["Venta Acumulada Mes ($)"] - row["Venta Mes 2025 ($)"]) / row["Venta Mes 2025 ($)"] * 100) if row["Venta Mes 2025 ($)"] > 0 else 0.0,
+            # Fórmula exacta solicitada: ((Venta Actual - Venta Año Pasado) / Venta Año Pasado) * 100
+            df_mostrar["% Crecimiento Dinamico"] = df_mostrar.apply(
+                lambda row: ((row["Venta Acumulada Mes ($)"] - row[col_vp_nombre]) / row[col_vp_nombre] * 100) if row[col_vp_nombre] > 0 else 0.0,
                 axis=1
             )
             
@@ -393,40 +403,42 @@ elif st.session_state.modulo_actual == "Finanzas":
             
             df_formato = df_mostrar.copy()
             df_formato["Presupuesto Mes ($)"] = df_formato["Presupuesto Mes ($)"].apply(lambda x: f"${x:,.0f}")
-            df_formato["Venta Mes 2025 ($)"] = df_formato["Venta Mes 2025 ($)"].apply(lambda x: f"${x:,.0f}")
+            df_formato[col_vp_nombre] = df_formato[col_vp_nombre].apply(lambda x: f"${x:,.0f}")
             df_formato["Venta Acumulada Mes ($)"] = df_formato["Venta Acumulada Mes ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato["Ticket Promedio ($)"] = df_formato["Ticket Promedio ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato["Unidades Vendidas"] = df_formato["Unidades Vendidas"].apply(lambda x: f"{x:,}")
             df_formato["Desperdicio Acumulado (Unid)"] = df_formato["Desperdicio Acumulado (Unid)"].apply(lambda x: f"{x:,}")
-            df_formato["% Crecimiento 2025"] = df_formato["% Crecimiento vs 2025"].apply(lambda x: f"{x:.2f}%")
+            df_formato[f"% Crecimiento {anio_sel} vs {anio_pasado}"] = df_mostrar["% Crecimiento Dinamico"].apply(lambda x: f"{x:.2f}%")
             df_formato["% Desperdicio Fila"] = df_formato["% Desperdicio"].apply(lambda x: f"{x:.2f}%")
             df_formato["% Cumplimiento Promedio"] = df_formato["% Cumplimiento"].apply(lambda x: f"{x:.2f}%")
             
+            col_crecimiento_titulo = f"% Crecimiento {anio_sel} vs {anio_pasado}"
+            
             df_para_mostrar = df_formato[[
-                "Almacén", "Presupuesto Mes ($)", "Venta Mes 2025 ($)", "Venta Acumulada Mes ($)", 
-                "% Crecimiento 2025", "Ticket Promedio ($)", "Unidades Vendidas", 
+                "Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Acumulada Mes ($)", 
+                col_crecimiento_titulo, "Ticket Promedio ($)", "Unidades Vendidas", 
                 "Desperdicio Acumulado (Unid)", "% Desperdicio Fila", "% Cumplimiento Promedio"
             ]]
 
-            def color_semaforo(val):
+            def color_crecimiento(val):
                 try:
-                    num = float(val.replace('%', ''))
+                    num = float(val.replace('%', '').strip())
                 except:
                     num = 0.0
-                if num >= 100:
-                    return 'background-color: #d4edda; color: #155724; font-weight: bold;'
-                elif num >= 85:
-                    return 'background-color: #fff3cd; color: #856404; font-weight: bold;'
+                if num > 0:
+                    return 'background-color: #d4edda; color: #155724; font-weight: bold;' # Verde positivo
+                elif num < 0:
+                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold;' # Rojo decrecimiento
                 else:
-                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+                    return 'background-color: #e2e3e5; color: #383d41; font-weight: bold;' # Neutro 0%
 
-            st.markdown("### 📊 Semáforo de Cumplimiento Consolidado")
-            df_estilizado = df_para_mostrar.style.map(color_semaforo, subset=['% Cumplimiento Promedio'])
+            st.markdown(f"### 📊 Semáforo Dinámico de Crecimiento ({anio_sel} vs {anio_pasado})")
+            df_estilizado = df_para_mostrar.style.map(color_crecimiento, subset=[col_crecimiento_titulo])
             st.dataframe(df_estilizado, use_container_width=True)
 
         with tab_presupuestos:
-            st.subheader(f"⚙️ Configuración de Presupuestos & Venta 2025 - {mes_sel_nombre} {anio_sel}")
-            st.write("Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año 2025 para el comparativo:")
+            st.subheader(f"⚙️ Configuración de Presupuestos & Venta {anio_pasado} - {mes_sel_nombre} {anio_sel}")
+            st.write(f"Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año **{anio_pasado}** para activar el comparativo dinámico:")
             
             df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", key=f"editor_presup_{anio_sel}_{mes_num}")
             
@@ -440,7 +452,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             almacen_sel = st.selectbox("Selecciona el almacén a auditar / operar:", st.session_state.lista_almacenes_base)
             
             presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
-            venta_2025_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Venta Mes 2025 ($)"].values[0])
+            venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel][col_vp_nombre].values[0])
             
             df_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == almacen_sel].copy()
             
@@ -450,7 +462,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             desp_tienda = df_tienda_diario["Desperdicio (Unid)"].sum()
             
             cump_tienda = (venta_tienda / presupuesto_tienda * 100) if presupuesto_tienda > 0 else 0.0
-            crecimiento_tienda = ((venta_tienda - venta_2025_tienda) / venta_2025_tienda * 100) if venta_2025_tienda > 0 else 0.0
+            crecimiento_tienda = ((venta_tienda - venta_pasada_tienda) / venta_pasada_tienda * 100) if venta_pasada_tienda > 0 else 0.0
             ticket_tienda = (venta_tienda / trans_tienda) if trans_tienda > 0 else 0.0
             pct_desp_tienda = (desp_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
@@ -459,28 +471,29 @@ elif st.session_state.modulo_actual == "Finanzas":
             with col_t1:
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">💰 VENTA ACUMULADA TIENDA</div>
+                        <div class="erp-title">💰 VENTA ACUMULADA</div>
                         <div class="erp-value">${venta_tienda:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t2:
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📈 CUMPLIMIENTO TIENDA</div>
+                        <div class="erp-title">📈 CUMPLIMIENTO</div>
                         <div class="erp-value">{cump_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t3:
+                color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📊 CRECIMIENTO VS 2025</div>
-                        <div class="erp-value">{crecimiento_tienda:.2f}%</div>
+                        <div class="erp-title">📊 CRECIMIENTO VS {anio_pasado}</div>
+                        <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t4:
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">⚠️ % DESPERDICIO TIENDA</div>
+                        <div class="erp-title">⚠️ % DESPERDICIO</div>
                         <div class="erp-value">{pct_desp_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
@@ -544,7 +557,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         tienda = st.session_state.db_admins[ced]["tienda"]
         
         presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
-        venta_2025_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Venta Mes 2025 ($)"].values[0])
+        venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda][col_vp_nombre].values[0])
         
         df_mi_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == tienda].copy()
         
@@ -554,7 +567,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         d_tienda = df_mi_tienda_diario["Desperdicio (Unid)"].sum()
         
         c_tienda = (v_tienda / presupuesto_tienda * 100) if presupuesto_tienda > 0 else 0.0
-        crecimiento_tienda = ((v_tienda - venta_2025_tienda) / venta_2025_tienda * 100) if venta_2025_tienda > 0 else 0.0
+        crecimiento_tienda = ((v_tienda - venta_pasada_tienda) / venta_pasada_tienda * 100) if venta_pasada_tienda > 0 else 0.0
         tk_tienda = (v_tienda / tr_tienda) if tr_tienda > 0 else 0.0
         pct_desp_tienda = (d_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
@@ -576,10 +589,11 @@ elif st.session_state.modulo_actual == "Finanzas":
                 </div>
             """, unsafe_allow_html=True)
         with col_ad3:
+            color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
             st.markdown(f"""
                 <div class="erp-card">
-                    <div class="erp-title">📊 CRECIMIENTO VS 2025</div>
-                    <div class="erp-value">{crecimiento_tienda:.2f}%</div>
+                    <div class="erp-title">📊 CRECIMIENTO VS {anio_pasado}</div>
+                    <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad4:
@@ -687,6 +701,6 @@ elif st.session_state.modulo_actual == "EOR":
     st.title("📋 Módulo Auditoría EOR")
     st.info("🚧 Módulo en construcción. Aquí realizaremos las revisiones de estándares.")
 
-elif st.session_state.json_actual if "json_actual" in locals() else st.session_state.modulo_actual == "Previsiones":
+elif st.session_state.modulo_actual == "Previsiones":
     st.title("🔮 Módulo de Previsiones")
     st.info("🚧 Módulo en construcción. Aquí proyectaremos las metas y presupuestos.")
