@@ -8,96 +8,107 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Gama de Colores Cian / Tecnológico)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Fondo Blanco & Elementos en Cian)
 # ==========================================
 st.markdown("""
     <style>
-    /* Fondo general dinámico con degradado en tonos cian oscuros y profundos */
+    /* Fondo general blanco y limpio para toda la aplicación */
     .stApp {
-        background: linear-gradient(135deg, #051923, #003554, #006494);
-        background-attachment: fixed;
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #2b2b2b;
     }
 
-    /* Tarjetas ERP unificadas en toda la plataforma (Bordes y luces en Cian Brillante) */
+    /* Forzar textos generales a gris oscuro/negro para legibilidad en fondo blanco */
+    h1, h2, h3, h4, h5, h6, p, span, label {
+        color: #2b2b2b !important;
+    }
+
+    /* Tarjetas ERP unificadas (Fondo blanco sutil con bordes y acentos en Cian) */
     .erp-card {
-        background: rgba(0, 53, 84, 0.75);
+        background: #f0fbfc;
         backdrop-filter: blur(10px);
         border: 1.5px solid #00b4d8;
         border-radius: 16px;
         padding: 22px;
-        color: white;
+        color: #2b2b2b;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 180, 216, 0.25);
+        box-shadow: 0 4px 15px rgba(0, 180, 216, 0.15);
         margin-bottom: 15px;
         transition: 0.3s;
     }
     .erp-card:hover {
-        border-color: #90e0ef;
-        box-shadow: 0 6px 20px rgba(144, 224, 239, 0.45);
+        border-color: #0077b6;
+        box-shadow: 0 6px 20px rgba(0, 119, 182, 0.25);
     }
     .erp-title {
         font-size: 16px;
         font-weight: 700;
-        color: #90e0ef;
+        color: #0077b6 !important;
         margin-bottom: 8px;
     }
     .erp-value {
         font-size: 24px;
         font-weight: bold;
-        color: #ffffff;
+        color: #03045e !important;
     }
 
-    /* Contenedor de Login Estilizado con Cian Brillante */
+    /* Contenedor de Login Estilizado */
     .login-container {
-        background: rgba(5, 25, 35, 0.85);
+        background: #f0fbfc;
         backdrop-filter: blur(10px);
         border: 2px solid #00b4d8;
         border-radius: 20px;
         padding: 40px;
-        box-shadow: 0 8px 32px 0 rgba(0, 180, 216, 0.35);
+        box-shadow: 0 8px 32px 0 rgba(0, 180, 216, 0.2);
         max-width: 600px;
         margin: 50px auto;
-        color: white;
+        color: #2b2b2b;
     }
     
     .login-title {
         font-size: 28px;
         font-weight: 800;
-        color: #ffffff;
+        color: #03045e !important;
         text-align: center;
         margin-bottom: 10px;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
     
     .login-subtitle {
         font-size: 15px;
-        color: #ffffff;
+        color: #0077b6 !important;
         text-align: center;
         margin-bottom: 30px;
     }
 
-    /* Forzar texto blanco puro en etiquetas de inputs de Streamlit */
+    /* Etiquetas de inputs de Streamlit */
     .stTextInput label, .stSelectbox label, .stDateInput label {
-        color: #ffffff !important;
+        color: #03045e !important;
         font-weight: 600 !important;
     }
 
-    /* Estilo para los inputs de texto con enfoque cian */
-    .stTextInput input {
-        background-color: #051923 !important;
-        color: white !important;
-        border: 1px solid #006494 !important;
+    /* Estilo para los inputs de texto y desplegables (Selectbox) con bordes cian */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+        background-color: #ffffff !important;
+        color: #2b2b2b !important;
+        border: 1.5px solid #00b4d8 !important;
         border-radius: 8px !important;
     }
     .stTextInput input:focus {
-        border-color: #00b4d8 !important;
-        box-shadow: 0 0 8px rgba(0, 180, 216, 0.6) !important;
+        border-color: #0077b6 !important;
+        box-shadow: 0 0 8px rgba(0, 180, 216, 0.4) !important;
     }
-    
+
+    /* Botones con estilo cian */
+    div.stButton > button {
+        background-color: #00b4d8 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
     div.stButton > button:hover {
-        border-color: #00b4d8 !important;
-        color: #00b4d8 !important;
+        background-color: #0077b6 !important;
+        color: white !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -304,7 +315,7 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">💰 FINANZAS</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Presupuesto, Ventas & Desperdicio</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Presupuesto, Ventas & Desperdicio</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a Finanzas", use_container_width=True):
@@ -316,7 +327,7 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📦 INVENTARIOS</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Control de stock y pedidos</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Control de stock y pedidos</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a Inventarios", use_container_width=True):
@@ -327,7 +338,7 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📅 PLANILLA SEMANAL</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Turnos, HeadCount & Rotación Admins</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Turnos, HeadCount & Rotación Admins</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a Planilla", use_container_width=True):
@@ -339,7 +350,7 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📋 AUDITORÍA EOR</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Estándares operativos de calidad</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Estándares operativos de calidad</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a EOR", use_container_width=True):
@@ -350,7 +361,7 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">🔮 PREVISIONES</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Proyecciones y metas de zona</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Proyecciones y metas de zona</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a Previsiones", use_container_width=True):
@@ -489,7 +500,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">💰 VENTA ACUMULADA RANGO</div>
                         <div class="erp-value">${t_venta:,.0f}</div>
-                        <div style="font-size: 11px; color: #90e0ef; margin-top: 4px;">Meta Proporcional: ${meta_fecha_zona:,.0f}</div>
+                        <div style="font-size: 11px; color: #0077b6; margin-top: 4px;">Meta Proporcional: ${meta_fecha_zona:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k2:
@@ -498,7 +509,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">📈 CUMPLIMIENTO RANGO</div>
                         <div class="erp-value" style="color: {color_cump_card};">{t_cump_prop:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {t_cumplimiento:.2f}%</div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Cump. Mes Total: {t_cumplimiento:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k3:
@@ -514,7 +525,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">⚠️ % DESPERDICIO ZONA</div>
                         <div class="erp-value" style="color: {color_tarjeta_desp};">{t_pct_desp_zona:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Límite mes: 10.0%</div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Límite mes: 10.0%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k5:
@@ -523,7 +534,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">📊 CRECIMIENTO RANGO</div>
                         <div class="erp-value" style="color: {color_crec_card};">{crecimiento_zona:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} en rango</div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">vs {anio_pasado} en rango</div>
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -691,7 +702,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">💰 VENTA ACUMULADA</div>
                         <div class="erp-value">${venta_tienda:,.0f}</div>
-                        <div style="font-size: 11px; color: #90e0ef; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
+                        <div style="font-size: 11px; color: #0077b6; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t2:
@@ -700,7 +711,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
                         <div class="erp-value" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {cump_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Cump. Mes Total: {cump_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t3:
@@ -716,7 +727,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">⚠️ % DESPERDICIO</div>
                         <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Acum: {desp_tienda:,} unid</div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Acum: {desp_tienda:,} unid</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t5:
@@ -725,7 +736,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
                         <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
+                        <div style="font-size: 11px; color: #555; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -823,7 +834,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 <div class="erp-card">
                     <div class="erp-title">💰 VENTA ACUMULADA</div>
                     <div class="erp-value">${v_tienda:,.0f}</div>
-                    <div style="font-size: 11px; color: #90e0ef; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
+                    <div style="font-size: 11px; color: #0077b6; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad2:
@@ -832,7 +843,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 <div class="erp-card">
                     <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
                     <div class="erp-value" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {c_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">Cump. Mes Total: {c_tienda:.2f}%</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad3:
@@ -848,7 +859,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 <div class="erp-card">
                     <div class="erp-title">⚠️ % DESPERDICIO</div>
                     <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Acum: {d_tienda:,} unid</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">Acum: {d_tienda:,} unid</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad5:
@@ -857,7 +868,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 <div class="erp-card">
                     <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
                     <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
+                    <div style="font-size: 11px; color: #555; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
                 </div>
             """, unsafe_allow_html=True)
 
