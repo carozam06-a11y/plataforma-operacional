@@ -3,6 +3,7 @@ import pandas as pd
 import calendar
 from datetime import datetime
 from io import BytesIO
+import os
 
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
@@ -43,8 +44,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -73,25 +74,39 @@ if "lista_almacenes_base" not in st.session_state:
         "PV 296 - NIZA CALLE 127"
     ]
 
-# Historial de presupuestos por mes (clave: "YYYY-MM")
-if "historial_presupuestos" not in st.session_state:
-    st.session_state.historial_presupuestos = {}
+# ==========================================
+# 💾 PERSISTENCIA CON ARCHIVOS CSV LOCALES
+# ==========================================
+DIR_DATOS = "datos_persistencia"
+if not os.path.exists(DIR_DATOS):
+    os.makedirs(DIR_DATOS)
 
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
-    if clave_mes not in st.session_state.historial_presupuestos:
-        st.session_state.historial_presupuestos[clave_mes] = pd.DataFrame({
+    ruta_csv = os.path.join(DIR_DATOS, f"presupuesto_{clave_mes}.csv")
+    
+    if os.path.exists(ruta_csv):
+        return pd.read_csv(ruta_csv)
+    else:
+        df_nuevo = pd.DataFrame({
             "Almacén": st.session_state.lista_almacenes_base,
             "Presupuesto Mes ($)": [15000000.0] * len(st.session_state.lista_almacenes_base)
         })
-    return st.session_state.historial_presupuestos[clave_mes]
+        df_nuevo.to_csv(ruta_csv, index=False)
+        return df_nuevo
 
-if "historial_meses" not in st.session_state:
-    st.session_state.historial_meses = {}
+def guardar_presupuesto(anio, mes_num, df):
+    clave_mes = f"{anio}-{mes_num:02d}"
+    ruta_csv = os.path.join(DIR_DATOS, f"presupuesto_{clave_mes}.csv")
+    df.to_csv(ruta_csv, index=False)
 
 def obtener_o_crear_mes(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
-    if clave_mes not in st.session_state.historial_meses:
+    ruta_csv = os.path.join(DIR_DATOS, f"registros_{clave_mes}.csv")
+    
+    if os.path.exists(ruta_csv):
+        return pd.read_csv(ruta_csv)
+    else:
         _, num_dias = calendar.monthrange(anio, mes_num)
         dias_espanol = {
             'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles', 
@@ -114,14 +129,29 @@ def obtener_o_crear_mes(anio, mes_num):
                     "Unidades Vendidas": 0,
                     "Desperdicio (Unid)": 0
                 })
-        st.session_state.historial_meses[clave_mes] = pd.DataFrame(registros)
-    
-    return st.session_state.historial_meses[clave_mes]
+        df_nuevo = pd.DataFrame(registros)
+        df_nuevo.to_csv(ruta_csv, index=False)
+        return df_nuevo
 
-if "df_headcount" not in st.session_state:
-    st.session_state.df_headcount = pd.DataFrame(columns=[
+def guardar_mes(anio, mes_num, df):
+    clave_mes = f"{anio}-{mes_num:02d}"
+    ruta_csv = os.path.join(DIR_DATOS, f"registros_{clave_mes}.csv")
+    df.to_csv(ruta_csv, index=False)
+
+# HeadCount persistente
+ruta_hc = os.path.join(DIR_DATOS, "headcount.csv")
+if os.path.exists(ruta_hc):
+    df_headcount_inicial = pd.read_csv(ruta_hc)
+else:
+    df_headcount_inicial = pd.DataFrame(columns=[
         "Cédula Colaborador", "Nombre Completo", "Cargo", "Almacén Asignado", "Estado"
     ])
+
+if "df_headcount" not in st.session_state:
+    st.session_state.df_headcount = df_headcount_inicial
+
+def guardar_headcount(df):
+    df.to_csv(ruta_hc, index=False)
 
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
@@ -382,9 +412,8 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", key=f"editor_presup_{anio_sel}_{mes_num}")
             
             if st.button("Guardar Nuevos Presupuestos del Mes"):
-                clave_mes = f"{anio_sel}-{mes_num:02d}"
-                st.session_state.historial_presupuestos[clave_mes] = df_presup_edit
-                st.success(f"¡Presupuestos de {mes_sel_nombre} {anio_sel} actualizados con éxito!")
+                guardar_presupuesto(anio_sel, mes_num, df_presup_edit)
+                st.success(f"¡Presupuestos de {mes_sel_nombre} {anio_sel} guardados de forma permanente!")
                 st.rerun()
             
         with tab_individual:
@@ -449,10 +478,10 @@ elif st.session_state.modulo_actual == "Finanzas":
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                clave_mes = f"{anio_sel}-{mes_num:02d}"
-                idx_tienda = st.session_state.historial_meses[clave_mes][st.session_state.historial_meses[clave_mes]["Almacén"] == almacen_sel].index
-                st.session_state.historial_meses[clave_mes].loc[idx_tienda] = df_diario_edit
-                st.success(f"¡Registros de {almacen_sel} para {mes_sel_nombre} guardados y acumulados con éxito!")
+                # Actualizar el dataframe global del mes reemplazando las filas de la tienda
+                df_mes_activo.loc[df_mes_activo["Almacén"] == almacen_sel] = df_diario_edit
+                guardar_mes(anio_sel, mes_num, df_mes_activo)
+                st.success(f"¡Registros de {almacen_sel} para {mes_sel_nombre} guardados de forma permanente!")
                 st.rerun()
 
         with tab_excel:
@@ -481,9 +510,8 @@ elif st.session_state.modulo_actual == "Finanzas":
                             lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                             axis=1
                         )
-                        clave_mes = f"{anio_sel}-{mes_num:02d}"
-                        st.session_state.historial_meses[clave_mes] = df_excel
-                        st.success(f"¡Información diaria de {mes_sel_nombre} cargada masivamente desde el Excel con éxito!")
+                        guardar_mes(anio_sel, mes_num, df_excel)
+                        st.success(f"¡Información diaria de {mes_sel_nombre} cargada y guardada de forma permanente!")
                         st.rerun()
                     else:
                         st.error("El archivo Excel subido no tiene la estructura correcta. Usa la plantilla oficial.")
@@ -553,10 +581,9 @@ elif st.session_state.modulo_actual == "Finanzas":
                 lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                 axis=1
             )
-            clave_mes = f"{anio_sel}-{mes_num:02d}"
-            idx_tienda = st.session_state.historial_meses[clave_mes][st.session_state.historial_meses[clave_mes]["Almacén"] == tienda].index
-            st.session_state.historial_meses[clave_mes].loc[idx_tienda] = df_diario_admin_edit
-            st.success("¡Reporte diario guardado y acumulado correctamente en el sistema!")
+            df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
+            guardar_mes(anio_sel, mes_num, df_mes_activo)
+            st.success("¡Reporte diario guardado de forma permanente en el sistema!")
             st.rerun()
 
 # ---> PANTALLA 3: PLANILLA DE HORARIOS <---
@@ -580,11 +607,17 @@ elif st.session_state.modulo_actual == "Planilla":
                 if st.form_submit_button("Añadir Colaborador"):
                     n_hc = pd.DataFrame({"Cédula Colaborador": [ced_col], "Nombre Completo": [nom_col], "Cargo": [car_col], "Almacén Asignado": [tie_col], "Estado": [est_col]})
                     st.session_state.df_headcount = pd.concat([st.session_state.df_headcount, n_hc], ignore_index=True)
-                    st.success("¡Colaborador agregado al HeadCount!")
+                    guardar_headcount(st.session_state.df_headcount)
+                    st.success("¡Colaborador agregado y guardado de forma permanente!")
                     st.rerun()
             if not st.session_state.df_headcount.empty:
                 st.markdown("### 📋 Listado General de Personal")
-                st.session_state.df_headcount = st.data_editor(st.session_state.df_headcount, num_rows="dynamic", key="editor_hc_general")
+                df_hc_edit = st.data_editor(st.session_state.df_headcount, num_rows="dynamic", key="editor_hc_general")
+                if st.button("Guardar Cambios en HeadCount"):
+                    st.session_state.df_headcount = df_hc_edit
+                    guardar_headcount(df_hc_edit)
+                    st.success("¡HeadCount actualizado y guardado!")
+                    st.rerun()
             else:
                 st.info("No hay colaboradores registrados en el HeadCount todavía.")
 
