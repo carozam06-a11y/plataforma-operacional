@@ -28,13 +28,13 @@ st.markdown("""
         box-shadow: 0 6px 12px rgba(255, 107, 0, 0.2);
     }
     .erp-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         color: #a0a0c0;
         margin-bottom: 8px;
     }
     .erp-value {
-        font-size: 26px;
+        font-size: 24px;
         font-weight: bold;
         color: #ffffff;
     }
@@ -359,12 +359,8 @@ elif st.session_state.modulo_actual == "Finanzas":
         total_venta = df_con["Venta Acumulada Mes ($)"].sum()
         total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
         
-        # Cumplimiento tradicional (Venta Acumulada / Presupuesto Total Mes)
         cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
-        
-        # Meta presupuestada acumulada a la fecha de corte D-1 y su cumplimiento proporcional
-        total_presupuesto_zona = total_presupuesto
-        meta_acumulada_a_la_fecha = (total_presupuesto_zona / total_dias_mes) * dia_corte
+        meta_acumulada_a_la_fecha = (total_presupuesto / total_dias_mes) * dia_corte
         cumplimiento_proporcional_fecha = (total_venta / meta_acumulada_a_la_fecha * 100) if meta_acumulada_a_la_fecha > 0 else 0
         
         total_transacciones = df_mes_corte["Transacciones / Clientes"].sum()
@@ -374,7 +370,10 @@ elif st.session_state.modulo_actual == "Finanzas":
         total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
         pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
         
-        return total_venta, cumplimiento, cumplimiento_proporcional_fecha, pct_desp_zona, ticket_prom_zona, meta_acumulada_a_la_fecha
+        total_venta_prop_pasada = df_con["Venta Proporcional Año Pasado ($)"].sum()
+        crecimiento_zona = ((total_venta - total_venta_prop_pasada) / total_venta_prop_pasada * 100) if total_venta_prop_pasada > 0 else 0.0
+        
+        return total_venta, cumplimiento, cumplimiento_proporcional_fecha, pct_desp_zona, ticket_prom_zona, meta_acumulada_a_la_fecha, crecimiento_zona
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
@@ -382,16 +381,17 @@ elif st.session_state.modulo_actual == "Finanzas":
         ])
         
         with tab_resumen:
-            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
+            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
             
             st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel}) — Corte D-1 al Día {dia_corte} ({pct_meta_tiempo:.1f}% del mes)")
-            col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+            
+            col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
             with col_k1:
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">💰 VENTA ACUMULADA (Corte D-1)</div>
+                        <div class="erp-title">💰 VENTA ACUMULADA</div>
                         <div class="erp-value">${t_venta:,.0f}</div>
-                        <div style="font-size: 12px; color: #ffb74d; margin-top: 5px;">Meta Presupuestada a la Fecha: ${meta_fecha_zona:,.0f}</div>
+                        <div style="font-size: 11px; color: #ffb74d; margin-top: 4px;">Meta a la Fecha: ${meta_fecha_zona:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k2:
@@ -417,6 +417,15 @@ elif st.session_state.modulo_actual == "Finanzas":
                         <div class="erp-title">⚠️ % DESPERDICIO ZONA</div>
                         <div class="erp-value" style="color: {color_tarjeta_desp};">{t_pct_desp_zona:.2f}%</div>
                         <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Límite mes: 10.0%</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col_k5:
+                color_crec_card = "#28a745" if crecimiento_zona >= 0 else "#dc3545"
+                st.markdown(f"""
+                    <div class="erp-card">
+                        <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
+                        <div class="erp-value" style="color: {color_crec_card};">{crecimiento_zona:.2f}%</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -532,13 +541,14 @@ elif st.session_state.modulo_actual == "Finanzas":
             pct_desp_tienda = (desp_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
             st.markdown(f"### 📍 Indicadores Exclusivos de: {almacen_sel} (Corte D-1 al Día {dia_corte})")
-            col_t1, col_t2, col_t3, col_t4 = st.columns(4)
+            
+            col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
             with col_t1:
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">💰 VENTA ACUMULADA (Corte)</div>
+                        <div class="erp-title">💰 VENTA ACUMULADA</div>
                         <div class="erp-value">${venta_tienda:,.0f}</div>
-                        <div style="font-size: 12px; color: #ffb74d; margin-top: 5px;">Meta Presupuestada: ${meta_presup_tienda_fecha:,.0f}</div>
+                        <div style="font-size: 11px; color: #ffb74d; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t2:
@@ -551,11 +561,10 @@ elif st.session_state.modulo_actual == "Finanzas":
                     </div>
                 """, unsafe_allow_html=True)
             with col_t3:
-                color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
-                        <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
+                        <div class="erp-title">🎫 TICKET PROMEDIO</div>
+                        <div class="erp-value">${ticket_tienda:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t4:
@@ -565,6 +574,15 @@ elif st.session_state.modulo_actual == "Finanzas":
                         <div class="erp-title">⚠️ % DESPERDICIO</div>
                         <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
                         <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Acum: {desp_tienda:,} unid</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col_t5:
+                color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
+                st.markdown(f"""
+                    <div class="erp-card">
+                        <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
+                        <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -648,13 +666,13 @@ elif st.session_state.modulo_actual == "Finanzas":
 
         st.info(f"Tienda asignada: {tienda} | Periodo: {mes_sel_nombre} {anio_sel} (Corte D-1 al Día {dia_corte})")
         
-        col_ad1, col_ad2, col_ad3, col_ad4 = st.columns(4)
+        col_ad1, col_ad2, col_ad3, col_ad4, col_ad5 = st.columns(5)
         with col_ad1:
             st.markdown(f"""
                 <div class="erp-card">
                     <div class="erp-title">💰 VENTA ACUMULADA</div>
                     <div class="erp-value">${v_tienda:,.0f}</div>
-                    <div style="font-size: 12px; color: #ffb74d; margin-top: 5px;">Meta Presupuestada: ${meta_presup_tienda_fecha:,.0f}</div>
+                    <div style="font-size: 11px; color: #ffb74d; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad2:
@@ -667,11 +685,10 @@ elif st.session_state.modulo_actual == "Finanzas":
                 </div>
             """, unsafe_allow_html=True)
         with col_ad3:
-            color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
             st.markdown(f"""
                 <div class="erp-card">
-                    <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
-                    <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
+                    <div class="erp-title">🎫 TICKET PROMEDIO</div>
+                    <div class="erp-value">${tk_tienda:,.0f}</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad4:
@@ -681,6 +698,15 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-title">⚠️ % DESPERDICIO</div>
                     <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
                     <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Acum: {d_tienda:,} unid</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_ad5:
+            color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
+            st.markdown(f"""
+                <div class="erp-card">
+                    <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
+                    <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
                 </div>
             """, unsafe_allow_html=True)
 
