@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Fondo Blanco & Bordes Cian en Desplegables)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Tarjetas de Altura Uniforme & Bordes Cian)
 # ==========================================
 st.markdown("""
     <style>
@@ -23,7 +23,7 @@ st.markdown("""
         color: #2b2b2b !important;
     }
 
-    /* Tarjetas ERP unificadas */
+    /* Tarjetas ERP unificadas con altura uniforme para mantener simetría */
     .erp-card {
         background: #f0fbfc;
         backdrop-filter: blur(10px);
@@ -34,6 +34,11 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 4px 15px rgba(0, 180, 216, 0.15);
         margin-bottom: 15px;
+        min-height: 165px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         transition: 0.3s;
     }
     .erp-card:hover {
@@ -41,7 +46,7 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(0, 119, 182, 0.25);
     }
     .erp-title {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
         color: #0077b6 !important;
         margin-bottom: 8px;
@@ -127,8 +132,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "TU_CEDULA"      
-CLAVE_MASTER = "TU_NOMBRE_FECHA"  
+CEDULA_MASTER = "1032463775"      
+CLAVE_MASTER = "Carolina2026"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -511,7 +516,7 @@ elif st.session_state.modulo_actual == "Finanzas":
 
             t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales_rango(df_consolidado_rango, df_presupuesto_activo)
 
-            st.markdown(f"### 🌐 Indicadores Globales Zona 4 ({f_inicio} al {f_fin} — {delta_dias} días, {pct_meta_tiempo:.1f}% del mes)")
+            st.markdown(f"### 🌐 Indicadores Globales Zona 4 — {pct_meta_tiempo:.1f}% del mes")
             
             col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
             with col_k1:
