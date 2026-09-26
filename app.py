@@ -318,14 +318,13 @@ elif st.session_state.modulo_actual == "Finanzas":
         dia_corte_default = 1
 
     if st.session_state.usuario_rol == "Master":
-        tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
-            f"📋 Análisis Integral de Almacenes ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & Venta {anio_pasado} ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})", "📁 Carga Masiva (Excel)"
+        tab_resumen, tab_presupuestos, tab_individual = st.tabs([
+            f"📋 Análisis Integral de Almacenes ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & Venta {anio_pasado} ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})"
         ])
         
         with tab_resumen:
             st.subheader(f"🌐 Análisis Integral & Selector de Fechas Rango — {mes_sel_nombre} {anio_sel}")
             
-            # 📅 Selector de Rango de Fechas Desplegable (Calendario Streamlit)
             primer_dia_mes = datetime(anio_sel, mes_num, 1).date()
             ultimo_dia_mes = datetime(anio_sel, mes_num, total_dias_mes).date()
             fecha_fin_default = datetime(anio_sel, mes_num, dia_corte_default).date() if dia_corte_default <= total_dias_mes else ultimo_dia_mes
@@ -533,7 +532,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
             st.dataframe(df_estilizado, use_container_width=True)
 
-            # 📥 Botón de Exportación a Excel - Análisis Integral
             output_integral = BytesIO()
             with pd.ExcelWriter(output_integral, engine='openpyxl') as writer:
                 df_para_mostrar.to_excel(writer, index=False, sheet_name='Analisis_Integral_Zona4')
@@ -548,14 +546,40 @@ elif st.session_state.modulo_actual == "Finanzas":
 
         with tab_presupuestos:
             st.subheader(f"⚙️ Configuración de Presupuestos & Venta {anio_pasado} - {mes_sel_nombre} {anio_sel}")
-            st.write(f"Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año **{anio_pasado}** para activar el comparativo dinámico:")
+            st.write(f"Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año **{anio_pasado}**:")
             
             df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", key=f"editor_presup_{anio_sel}_{mes_num}")
             
-            if st.button("Guardar Configuración y Metas del Mes"):
-                guardar_presupuesto(anio_sel, mes_num, df_presup_edit)
-                st.success(f"¡Configuración de {mes_sel_nombre} {anio_sel} guardada de forma permanente!")
-                st.rerun()
+            col_p_save, col_p_dl, col_p_ul = st.columns(3)
+            with col_p_save:
+                if st.button("Guardar Configuración y Metas del Mes"):
+                    guardar_presupuesto(anio_sel, mes_num, df_presup_edit)
+                    st.success(f"¡Configuración de {mes_sel_nombre} {anio_sel} guardada de forma permanente!")
+                    st.rerun()
+            with col_p_dl:
+                output_p = BytesIO()
+                with pd.ExcelWriter(output_p, engine='openpyxl') as writer:
+                    df_presupuesto_activo.to_excel(writer, index=False, sheet_name=f'Presupuestos_{mes_sel_nombre}')
+                excel_p_bytes = output_p.getvalue()
+                st.download_button(
+                    label="📥 Descargar Plantilla Presupuestos",
+                    data=excel_p_bytes,
+                    file_name=f"Plantilla_Presupuestos_{mes_sel_nombre}_{anio_sel}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            with col_p_ul:
+                arch_p = st.file_uploader("Subir Presupuestos diligenciados", type=["xlsx"], key="upload_presup")
+                if arch_p:
+                    try:
+                        df_p_excel = pd.read_excel(arch_p)
+                        if "Almacén" in df_p_excel.columns and "Presupuesto Mes ($)" in df_p_excel.columns:
+                            guardar_presupuesto(anio_sel, mes_num, df_p_excel)
+                            st.success("¡Presupuestos cargados y actualizados correctamente!")
+                            st.rerun()
+                        else:
+                            st.error("El archivo Excel no tiene las columnas requeridas ('Almacén', 'Presupuesto Mes ($)').")
+                    except Exception as e:
+                        st.error(f"Error al leer el archivo: {e}")
             
         with tab_individual:
             dia_corte_ind = dia_corte_default
@@ -645,7 +669,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             
             df_diario_edit = st.data_editor(df_tienda_diario, num_rows="fixed", key=f"edit_diario_{almacen_sel}_{anio_sel}_{mes_num}")
             
-            col_btn_save, col_btn_exp = st.columns([1, 1])
+            col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
             with col_btn_save:
                 if st.button("Guardar Registro Diario de esta Tienda"):
                     df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
@@ -657,53 +681,36 @@ elif st.session_state.modulo_actual == "Finanzas":
                     st.success(f"¡Registros de {almacen_sel} para {mes_sel_nombre} guardados de forma permanente!")
                     st.rerun()
 
-            with col_btn_exp:
-                # 📥 Botón de Exportación a Excel - Registro Diario de la Tienda
+            with col_btn_dl:
                 output_tienda = BytesIO()
                 with pd.ExcelWriter(output_tienda, engine='openpyxl') as writer:
-                    df_diario_edit.to_excel(writer, index=False, sheet_name=f'Registro_{almacen_sel[:10]}')
+                    df_mes_activo.to_excel(writer, index=False, sheet_name=f'Registros_{mes_sel_nombre}')
                 excel_tienda_bytes = output_tienda.getvalue()
                 
                 st.download_button(
-                    label=f"📥 Exportar Registro de {almacen_sel[:15]}...",
+                    label=f"📥 Descargar Plantilla Registros",
                     data=excel_tienda_bytes,
-                    file_name=f"Registro_Diario_{almacen_sel.replace(' ', '_')}_{mes_sel_nombre}_{anio_sel}.xlsx",
+                    file_name=f"Plantilla_Registros_{mes_sel_nombre}_{anio_sel}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-        with tab_excel:
-            st.subheader("Carga Masiva y Plantilla de Registros Diarios")
-            st.write("Descarga la plantilla en Excel, ingresa los datos y súbela aquí:")
-            
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df_mes_activo.to_excel(writer, index=False, sheet_name=f'Registros_{mes_sel_nombre}')
-            excel_plantilla = output.getvalue()
-            
-            st.download_button(
-                label=f"📥 Descargar Plantilla en Excel ({mes_sel_nombre} {anio_sel})",
-                data=excel_plantilla,
-                file_name=f"Plantilla_Zona4_{mes_sel_nombre}_{anio_sel}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            
-            st.markdown("---")
-            arch = st.file_uploader(f"Sube tu archivo Excel diligenciado para {mes_sel_nombre}", type=["xlsx"])
-            if arch:
-                try:
-                    df_excel = pd.read_excel(arch)
-                    if "Fecha y Día" in df_excel.columns and "Unidades Vendidas" in df_excel.columns:
-                        df_excel["Ticket Promedio ($)"] = df_excel.apply(
-                            lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
-                            axis=1
-                        )
-                        guardar_mes(anio_sel, mes_num, df_excel)
-                        st.success(f"¡Información diaria de {mes_sel_nombre} cargada y guardada de forma permanente!")
-                        st.rerun()
-                    else:
-                        st.error("El archivo Excel subido no tiene la estructura correcta. Usa la plantilla oficial.")
-                except Exception as e:
-                    st.error(f"Error al leer el archivo Excel: {e}")
+            with col_btn_ul:
+                arch_reg = st.file_uploader("Subir Registros Diarios en Excel", type=["xlsx"], key="upload_reg_diario")
+                if arch_reg:
+                    try:
+                        df_reg_excel = pd.read_excel(arch_reg)
+                        if "Fecha y Día" in df_reg_excel.columns and "Almacén" in df_reg_excel.columns:
+                            df_reg_excel["Ticket Promedio ($)"] = df_reg_excel.apply(
+                                lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
+                                axis=1
+                            )
+                            guardar_mes(anio_sel, mes_num, df_reg_excel)
+                            st.success("¡Registros diarios cargados y actualizados correctamente en el sistema!")
+                            st.rerun()
+                        else:
+                            st.error("El archivo Excel no tiene las columnas obligatorias ('Fecha y Día', 'Almacén').")
+                    except Exception as e:
+                        st.error(f"Error al leer el archivo: {e}")
 
     else:
         dia_corte_admin = dia_corte_default
@@ -794,7 +801,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         
         df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", key=f"admin_diario_{tienda}_{anio_sel}_{mes_num}")
         
-        col_btn_save, col_btn_exp = st.columns([1, 1])
+        col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
         with col_btn_save:
             if st.button("Guardar Reporte Diario de la Tienda"):
                 df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
@@ -806,18 +813,37 @@ elif st.session_state.modulo_actual == "Finanzas":
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
 
-        with col_btn_exp:
+        with col_btn_dl:
             output_tienda_adm = BytesIO()
             with pd.ExcelWriter(output_tienda_adm, engine='openpyxl') as writer:
-                df_diario_admin_edit.to_excel(writer, index=False, sheet_name='Mi_Tienda_Registro')
+                df_mi_tienda_diario.to_excel(writer, index=False, sheet_name='Mi_Tienda_Registro')
             excel_tienda_adm_bytes = output_tienda_adm.getvalue()
             
             st.download_button(
-                label=f"📥 Exportar Mi Registro Diario a Excel",
+                label=f"📥 Descargar Plantilla Tienda",
                 data=excel_tienda_adm_bytes,
-                file_name=f"Registro_Diario_{tienda.split(' - ')[0]}_{mes_sel_nombre}_{anio_sel}.xlsx",
+                file_name=f"Plantilla_Registro_{tienda.split(' - ')[0]}_{mes_sel_nombre}_{anio_sel}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
+        with col_btn_ul:
+            arch_reg_adm = st.file_uploader("Subir Plantilla Diligenciada", type=["xlsx"], key="upload_reg_adm")
+            if arch_reg_adm:
+                try:
+                    df_reg_adm_excel = pd.read_excel(arch_reg_adm)
+                    if "Fecha y Día" in df_reg_adm_excel.columns:
+                        df_reg_adm_excel["Ticket Promedio ($)"] = df_reg_adm_excel.apply(
+                            lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
+                            axis=1
+                        )
+                        df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_reg_adm_excel
+                        guardar_mes(anio_sel, mes_num, df_mes_activo)
+                        st.success("¡Registro de la tienda actualizado correctamente!")
+                        st.rerun()
+                    else:
+                        st.error("El archivo Excel no tiene la columna requerida ('Fecha y Día').")
+                except Exception as e:
+                    st.error(f"Error al leer el archivo: {e}")
 
 # ---> MÓDULOS EN CONSTRUCCIÓN <---
 elif st.session_state.modulo_actual == "Inventarios":
