@@ -997,7 +997,7 @@ elif st.session_state.modulo_actual == "EOR":
                 if id_str == "RSI 4":
                     desc_str = "Libre de atascos de alcantarillado e inundaciones"
                 
-                # Reenumerar RSI 9 como número 7 si es necesario en etiqueta (o dejar su ID tal cual)
+                # Reenumerar RSI 9 como número 7 si es necesario en etiqueta
                 if id_str == "RSI 9":
                     id_str = "RSI 7 (RSI 9)"
 
