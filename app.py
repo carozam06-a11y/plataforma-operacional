@@ -4,11 +4,12 @@ import calendar
 from datetime import datetime, timedelta
 from io import BytesIO
 import os
+import openpyxl
 
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Ocultar Índices & Compactar Tablas)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Diseño ERP Unificado)
 # ==========================================
 st.markdown("""
     <style>
@@ -132,7 +133,6 @@ st.markdown("""
         font-size: 13px !important;
         padding: 4px 6px !important;
     }
-    /* Ocultar la columna de índice en todas las tablas de Streamlit */
     [data-testid="stDataFrame"] table tr th:first-child,
     [data-testid="stDataFrame"] table tr td:first-child {
         display: none !important;
@@ -143,8 +143,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "TU_CEDULA"      
-CLAVE_MASTER = "TU_NOMBRE_FECHA"  
+CEDULA_MASTER = "1032463775"      
+CLAVE_MASTER = "Carolina2026"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -174,11 +174,13 @@ if "lista_almacenes_base" not in st.session_state:
     ]
 
 # ==========================================
-# 💾 PERSISTENCIA CON ARCHIVOS CSV LOCALES
+# 💾 PERSISTENCIA CON ARCHIVOS CSV Y EXCEL EOR
 # ==========================================
 DIR_DATOS = "datos_persistencia"
 if not os.path.exists(DIR_DATOS):
     os.makedirs(DIR_DATOS)
+
+EXCEL_EOR_MAESTRO = "EOR SEPTIEMBRE 2026.xlsx"
 
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
@@ -247,21 +249,6 @@ def guardar_mes(anio, mes_num, df):
     ruta_csv = os.path.join(DIR_DATOS, f"registros_{clave_mes}.csv")
     df.to_csv(ruta_csv, index=False)
 
-# HeadCount persistente
-ruta_hc = os.path.join(DIR_DATOS, "headcount.csv")
-if os.path.exists(ruta_hc):
-    df_headcount_inicial = pd.read_csv(ruta_hc)
-else:
-    df_headcount_inicial = pd.DataFrame(columns=[
-        "Cédula Colaborador", "Nombre Completo", "Cargo", "Almacén Asignado", "Estado"
-    ])
-
-if "df_headcount" not in st.session_state:
-    st.session_state.df_headcount = df_headcount_inicial
-
-def guardar_headcount(df):
-    df.to_csv(ruta_hc, index=False)
-
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
 
@@ -304,7 +291,7 @@ if not st.session_state.autenticado:
                 st.session_state.cedula_actual = cedula
                 st.rerun()
             else:
-                st.error("Cédula ou contraseña incorrectos.")
+                st.error("Cédula o contraseña incorrectos.")
                 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -400,11 +387,9 @@ if st.session_state.modulo_actual == "Inicio":
             st.session_state.modulo_actual = "Previsiones"
             st.rerun()
 
-# ---> PANTALLA 2: MÓDULO DE FINANZAS <---
+# ---> MÓDULO DE FINANZAS <---
 elif st.session_state.modulo_actual == "Finanzas":
     st.title("📊 Módulo de Finanzas - Zona 4")
-
-    # Selector de Año y Mes uno al lado del otro
     col_anio, col_mes = st.columns(2)
     with col_anio:
         anio_sel = st.selectbox("Año Actual:", [2025, 2026, 2027, 2028], index=1)
@@ -416,7 +401,6 @@ elif st.session_state.modulo_actual == "Finanzas":
         mes_sel_nombre = st.selectbox("Mes a Consultar / Operar:", list(meses_nombres.values()), index=8)
     
     mes_num = [k for k, v in meses_nombres.items() if v == mes_sel_nombre][0]
-
     anio_pasado = anio_sel - 1
     col_vp_nombre = f"Venta Mes {anio_pasado} ($)"
 
@@ -440,7 +424,6 @@ elif st.session_state.modulo_actual == "Finanzas":
         
         with tab_resumen:
             st.subheader("📋 Análisis Integral de Almacenes")
-            
             primer_dia_mes = datetime(anio_sel, mes_num, 1).date()
             ultimo_dia_mes = datetime(anio_sel, mes_num, total_dias_mes).date()
             fecha_fin_default = datetime(anio_sel, mes_num, dia_corte_default).date() if dia_corte_default <= total_dias_mes else ultimo_dia_mes
@@ -480,20 +463,16 @@ elif st.session_state.modulo_actual == "Finanzas":
             def obtener_consolidado_rango(df_rango, df_presup):
                 suma_mes = df_rango.groupby("Almacén")[["Venta Diaria ($)", "Transacciones / Clientes", "Unidades Vendidas", "Desperdicio (Unid)"]].sum().reset_index()
                 consolidado = pd.merge(df_presup, suma_mes, on="Almacén", how="left").fillna(0)
-                
                 consolidado["Ticket Promedio ($)"] = consolidado.apply(
                     lambda row: row["Venta Diaria ($)"] / row["Transacciones / Clientes"] if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                
                 consolidado["Venta Proporcional Año Pasado ($)"] = consolidado.apply(
                     lambda row: (row[col_vp_nombre] / total_dias_mes) * delta_dias,
                     axis=1
                 )
-                
                 consolidado = consolidado[["Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Proporcional Año Pasado ($)", "Venta Diaria ($)", "Ticket Promedio ($)", "Unidades Vendidas", "Desperdicio (Unid)"]]
                 consolidado.rename(columns={"Venta Diaria ($)": "Venta Acumulada Rango ($)", "Desperdicio (Unid)": "Desperdicio Acumulado (Unid)"}, inplace=True)
-                
                 consolidado["Presupuesto Mes ($)"] = consolidado["Presupuesto Mes ($)"].round(0)
                 consolidado[col_vp_nombre] = consolidado[col_vp_nombre].round(0)
                 consolidado["Venta Proporcional Año Pasado ($)"] = consolidado["Venta Proporcional Año Pasado ($)"].round(0)
@@ -508,21 +487,16 @@ elif st.session_state.modulo_actual == "Finanzas":
             def calcular_metricas_globales_rango(df_con, df_presup):
                 total_venta = df_con["Venta Acumulada Rango ($)"].sum()
                 total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
-                
                 cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
                 meta_acumulada_rango = (total_presupuesto / total_dias_mes) * delta_dias
                 cumplimiento_proporcional_rango = (total_venta / meta_acumulada_rango * 100) if meta_acumulada_rango > 0 else 0
-                
                 total_transacciones = df_mes_rango["Transacciones / Clientes"].sum()
                 ticket_prom_zona = (total_venta / total_transacciones) if total_transacciones > 0 else 0.0
-                
                 total_unid_zona = df_con["Unidades Vendidas"].sum()
                 total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
                 pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
-                
                 total_venta_prop_pasada = df_con["Venta Proporcional Año Pasado ($)"].sum()
                 crecimiento_zona = ((total_venta - total_venta_prop_pasada) / total_venta_prop_pasada * 100) if total_venta_prop_pasada > 0 else 0.0
-                
                 return total_venta, cumplimiento, cumplimiento_proporcional_rango, pct_desp_zona, ticket_prom_zona, meta_acumulada_rango, crecimiento_zona
 
             t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales_rango(df_consolidado_rango, df_presupuesto_activo)
@@ -578,19 +552,16 @@ elif st.session_state.modulo_actual == "Finanzas":
             
             df_mostrar = df_consolidado_rango.copy()
             df_mostrar["% Cumplimiento Rango"] = (df_mostrar["Venta Acumulada Rango ($)"] / (df_mostrar["Presupuesto Mes ($)"] / total_dias_mes * delta_dias) * 100)
-            
             df_mostrar["% Crecimiento Dinamico"] = df_mostrar.apply(
                 lambda row: ((row["Venta Acumulada Rango ($)"] - row["Venta Proporcional Año Pasado ($)"]) / row["Venta Proporcional Año Pasado ($)"] * 100) if row["Venta Proporcional Año Pasado ($)"] > 0 else 0.0,
                 axis=1
             )
-            
             df_mostrar["% Desperdicio"] = df_mostrar.apply(
                 lambda row: (row["Desperdicio Acumulado (Unid)"] / row["Unidades Vendidas"] * 100) if row["Unidades Vendidas"] > 0 else 0.0,
                 axis=1
             )
             
             col_crecimiento_titulo = f"% Crecimiento en Rango ({anio_sel} vs {anio_pasado})"
-            
             df_formato = df_mostrar.copy()
             df_formato["Presupuesto Mes ($)"] = df_formato["Presupuesto Mes ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato[col_vp_nombre] = df_formato[col_vp_nombre].apply(lambda x: f"${x:,.0f}")
@@ -617,7 +588,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                     estilos[idx_desp] = 'background-color: #d4edda; color: #155724; font-weight: bold;' if val_desp <= 10.0 else 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
                 except:
                     pass
-
                 try:
                     val_cump = float(row['% Cumplimiento Rango Fila'].replace('%', '').strip())
                     idx_cump = row.index.get_loc('% Cumplimiento Rango Fila')
@@ -629,7 +599,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                         estilos[idx_cump] = 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
                 except:
                     pass
-
                 try:
                     val_crec = float(row[col_crecimiento_titulo].replace('%', '').strip())
                     idx_crec = row.index.get_loc(col_crecimiento_titulo)
@@ -641,12 +610,9 @@ elif st.session_state.modulo_actual == "Finanzas":
                         estilos[idx_crec] = 'background-color: #e2e3e5; color: #383d41; font-weight: bold;'
                 except:
                     pass
-
                 return estilos
 
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
-            
-            # Usamos column_config para fijar anchos compactos y evitar que se expandan demasiado
             column_config_dict = {
                 "Almacén": st.column_config.TextColumn("Almacén", width="medium"),
                 "Presupuesto Mes ($)": st.column_config.TextColumn("Presupuesto Mes ($)", width="small"),
@@ -660,7 +626,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                 "% Cumplimiento Rango Fila": st.column_config.TextColumn("% Cump.", width="small"),
                 col_crecimiento_titulo: st.column_config.TextColumn("% Crec.", width="small"),
             }
-
             st.dataframe(df_estilizado, use_container_width=True, column_config=column_config_dict, hide_index=True)
 
             output_integral = BytesIO()
@@ -678,7 +643,6 @@ elif st.session_state.modulo_actual == "Finanzas":
         with tab_presupuestos:
             st.subheader(f"⚙️ Configuración de Presupuestos & Venta {anio_pasado} - {mes_sel_nombre} {anio_sel}")
             st.write(f"Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año **{anio_pasado}**:")
-            
             df_presup_edit = st.data_editor(df_presupuesto_activo, num_rows="fixed", hide_index=True, key=f"editor_presup_{anio_sel}_{mes_num}")
             
             col_p_save, col_p_dl, col_p_ul = st.columns(3)
@@ -726,7 +690,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             
             presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
             meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte_ind
-            
             venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel][col_vp_nombre].values[0])
             venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte_ind
             
@@ -797,7 +760,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                 lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                 axis=1
             )
-            
             df_diario_edit = st.data_editor(df_tienda_diario, num_rows="fixed", hide_index=True, key=f"edit_diario_{almacen_sel}_{anio_sel}_{mes_num}")
             
             col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
@@ -817,7 +779,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                 with pd.ExcelWriter(output_tienda, engine='openpyxl') as writer:
                     df_mes_activo.to_excel(writer, index=False, sheet_name=f'Registros_{mes_sel_nombre}')
                 excel_tienda_bytes = output_tienda.getvalue()
-                
                 st.download_button(
                     label=f"📥 Descargar Plantilla Registros",
                     data=excel_tienda_bytes,
@@ -858,7 +819,6 @@ elif st.session_state.modulo_actual == "Finanzas":
         
         presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
         meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte_admin
-        
         venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda][col_vp_nombre].values[0])
         venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte_admin
         
@@ -929,7 +889,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
             axis=1
         )
-        
         df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", hide_index=True, key=f"admin_diario_{tienda}_{anio_sel}_{mes_num}")
         
         col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
@@ -949,7 +908,6 @@ elif st.session_state.modulo_actual == "Finanzas":
             with pd.ExcelWriter(output_tienda_adm, engine='openpyxl') as writer:
                 df_mi_tienda_diario.to_excel(writer, index=False, sheet_name='Mi_Tienda_Registro')
             excel_tienda_adm_bytes = output_tienda_adm.getvalue()
-            
             st.download_button(
                 label=f"📥 Descargar Plantilla Tienda",
                 data=excel_tienda_adm_bytes,
@@ -976,14 +934,137 @@ elif st.session_state.modulo_actual == "Finanzas":
                 except Exception as e:
                     st.error(f"Error al leer el archivo: {e}")
 
+# ---> MÓDULO DE AUDITORÍA EOR (CONECTADO AL EXCEL OFICIAL) <---
+elif st.session_state.modulo_actual == "EOR":
+    st.title("📋 Módulo de Auditoría EOR - Zona 4")
+    st.write("Realiza la auditoría oficial sincronizada directamente con el archivo Excel maestro (**EOR SEPTIEMBRE 2026.xlsx**):")
+
+    if not os.path.exists(EXCEL_EOR_MAESTRO):
+        st.error(f"⚠️ No se encontró el archivo maestro '{EXCEL_EOR_MAESTRO}' en el directorio. Asegúrate de colocarlo en la misma carpeta del proyecto.")
+    else:
+        wb_ maestro = openpyxl.load_workbook(EXCEL_EOR_MAESTRO, data_only=True)
+        sheet_rev = wb_maestro[' Revisión de operaciones']
+
+        # Extraer estructura de ítems desde la hoja ' Revisión de operaciones'
+        # Buscamos las filas con categorías e ítems
+        preguntas_eor = []
+        cat_actual = ""
+        
+        for r in range(10, sheet_rev.max_row + 1):
+            val_cat = sheet_rev.cell(r, 1).value
+            val_id = sheet_rev.cell(r, 2).value
+            val_desc = sheet_rev.cell(r, 3).value
+            
+            if val_cat and val_cat.strip():
+                cat_actual = val_cat.strip()
+            
+            if val_id and val_desc and str(val_id).startswith(("RSI", "FS-", "RC", "GS", "RE", "TR", "Pregunta", "MD", "ES", "LS")):
+                preguntas_eor.append({
+                    "Categoria": cat_actual if cat_actual else "General",
+                    "Id": str(val_id).strip(),
+                    "Pregunta": str(val_desc).strip()
+                })
+
+        with st.form("form_eor_maestro"):
+            col_e1, col_e2, col_e3 = st.columns(3)
+            with col_e1:
+                fecha_auditoria = st.date_input("Fecha de Auditoría:", value=datetime.now().date())
+            with col_e2:
+                tienda_auditada = st.selectbox("Almacén a Auditar:", st.session_state.lista_almacenes_base)
+            with col_e3:
+                responsable_tienda = st.text_input("Responsable / Administrador:", value="Administrador de Tienda")
+                auditor_nombre = st.text_input("Evaluador / Consultora:", value="Carolina Zamora")
+
+            st.markdown("---")
+            st.markdown("### 🔍 Evaluación por Estándares (One Inspire / EOR)")
+
+            respuestas_usuario = []
+            
+            cat_grupo = ""
+            for idx, item in enumerate(preguntas_eor):
+                if item["Categoria"] != cat_grupo:
+                    cat_grupo = item["Categoria"]
+                    st.markdown(f"#### 📌 {cat_grupo}")
+                
+                st.markdown(f"**[{item['Id']}]** {item['Pregunta']}")
+                c_val, c_obs = st.columns([1, 2])
+                with c_val:
+                    # Opciones estándar inspiradas en el Excel
+                    calif = st.selectbox("Cumplimiento:", ["Sí", "No", "N/A"], key=f"eor_val_{idx}")
+                with c_obs:
+                    obs = st.text_input("Observación / Justificación (Por qué cumple o no):", key=f"eor_obs_{idx}", placeholder="Escribe aquí el motivo o hallazgo...")
+                st.markdown("")
+                
+                respuestas_usuario.append({
+                    "Categoria": item["Categoria"],
+                    "Id": item["Id"],
+                    "Pregunta": item["Pregunta"],
+                    "Calificacion": calif,
+                    "Observacion": obs
+                })
+
+            submitted_eor_real = st.form_submit_button("💾 Guardar Auditoría y Actualizar Excel Maestro", use_container_width=True)
+            
+            if submitted_eor_real:
+                try:
+                    # Abrir el libro con openpyxl en modo escritura para actualizar hojas
+                    wb_mod = openpyxl.load_workbook(EXCEL_EOR_MAESTRO)
+                    
+                    # Generar nombres de pestañas basados en la tienda (ej: 'EOR PV 180' y 'P.A. PV 180')
+                    codigo_tienda_str = tienda_auditada.split(" - ")[0].strip()
+                    nombre_hoja_eor = f"EOR {codigo_tienda_str}"
+                    nombre_hoja_pa = f"P.A. {codigo_tienda_str}"
+                    
+                    if nombre_hoja_eor not in wb_mod.sheetnames:
+                        # Si no existe exactamente, crearla duplicando o usando la estructura
+                        ws_nueva_eor = wb_mod.create_sheet(title=nombre_hoja_eor)
+                    else:
+                        ws_nueva_eor = wb_mod[nombre_hoja_eor]
+                        
+                    if nombre_hoja_pa not in wb_mod.sheetnames:
+                        ws_nueva_pa = wb_mod.create_sheet(title=nombre_hoja_pa)
+                    else:
+                        ws_nueva_pa = wb_mod[nombre_hoja_pa]
+
+                    # Actualizar metadatos en la hoja de EOR de la tienda
+                    ws_nueva_eor['C2'] = tienda_auditada
+                    ws_nueva_eor['C3'] = f"{responsable_tienda} - {auditor_nombre}"
+                    ws_nueva_eor['C4'] = datetime.combine(fecha_auditoria, datetime.min.time())
+
+                    # Recopilar brechas (respuestas "No") para el Plan de Acción
+                    brechas = [r for r in respuestas_usuario if r["Calificacion"] == "No"]
+                    
+                    # Llenar Plan de Acción en la pestaña P.A. PV XXX
+                    ws_nueva_pa['A1'] = "Plan de Acción — Mejora Continua EOR Zona 4"
+                    ws_nueva_pa['A3'] = "Acción correctiva / Plan de acción"
+                    ws_nueva_pa['B3'] = "Responsable"
+                    ws_nueva_pa['C3'] = "Fecha de ejecucion prevista"
+                    ws_nueva_pa['D3'] = "Comentarios / Hallazgos"
+                    ws_nueva_pa['E3'] = "Fecha de cierre real"
+                    
+                    row_pa = 4
+                    for b in brechas:
+                        ws_nueva_pa.cell(row=row_pa, column=1, value=f"Atender hallazgo en [{b['Id']}]: {b['Pregunta']}")
+                        ws_nueva_pa.cell(row=row_pa, column=2, value=responsable_tienda)
+                        ws_nueva_pa.cell(row=row_pa, column=3, value="INMEDIATO / 5 DÍAS")
+                        ws_nueva_pa.cell(row=row_pa, column=4, value=b['Observacion'])
+                        ws_nueva_pa.cell(row=row_pa, column=5, value="")
+                        row_pa += 1
+
+                    wb_mod.save(EXCEL_EOR_MAESTRO)
+                    st.success(f"¡Auditoría de {tienda_auditada} guardada con éxito! El archivo Excel '{EXCEL_EOR_MAESTRO}' ha sido actualizado en la pestaña '{nombre_hoja_eor}' y su Plan de Acción en '{nombre_hoja_pa}'.")
+                
+                except Exception as e:
+                    st.error(f"Error al actualizar el archivo Excel: {e}")
+
 # ---> MÓDULOS EN CONSTRUCCIÓN <---
 elif st.session_state.modulo_actual == "Inventarios":
     st.title("📦 Módulo de Inventarios")
     st.info("🚧 Módulo en construcción. Aquí controlaremos el stock y los pedidos.")
 
-elif st.session_state.modulo_actual == "EOR":
-    st.title("📋 Módulo Auditoría EOR")
-    st.info("🚧 Módulo en construcción. Aquí realizaremos las revisiones de estándares.")
+elif st.session_state.modulo_actual == "Planilla":
+    st.title("📅 Módulo de Planilla Semanal")
+    st.info("🚧 Módulo en construcción. Aquí gestionaremos turnos y HeadCount.")
 
 elif st.session_state.modulo_actual == "Previsiones":
     st.title("🔮 Módulo de Previsiones")
