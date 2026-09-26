@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Fondo Blanco & Elementos en Cian)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Fondo Blanco & Bordes Cian en Desplegables)
 # ==========================================
 st.markdown("""
     <style>
@@ -80,17 +80,28 @@ st.markdown("""
         margin-bottom: 30px;
     }
 
-    /* Etiquetas de inputs de Streamlit */
+    /* Etiquetas de inputs y selectores de Streamlit */
     .stTextInput label, .stSelectbox label, .stDateInput label {
         color: #03045e !important;
         font-weight: 600 !important;
     }
 
-    /* Estilo para los inputs de texto y desplegables */
-    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+    /* Estilo robusto para forzar bordes cian en todos los selectores / dropdowns de Streamlit */
+    div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        border: 2px solid #00b4d8 !important;
+        border-radius: 8px !important;
+        color: #2b2b2b !important;
+    }
+    div[data-baseweb="select"] > div:hover {
+        border-color: #0077b6 !important;
+    }
+
+    /* Estilo para los inputs de texto */
+    .stTextInput input {
         background-color: #ffffff !important;
         color: #2b2b2b !important;
-        border: 1.5px solid #00b4d8 !important;
+        border: 2px solid #00b4d8 !important;
         border-radius: 8px !important;
     }
     .stTextInput input:focus {
@@ -781,7 +792,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 )
 
             with col_btn_ul:
-                arch_reg = st.file_uploader("Subir Registros Diarios en Excel", type=["xlsx"], key="upload_reg_diario")
+                arch_reg = st.file_uploader("Subir Registros Diarios in Excel", type=["xlsx"], key="upload_reg_diario")
                 if arch_reg:
                     try:
                         df_reg_excel = pd.read_excel(arch_reg)
