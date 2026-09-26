@@ -23,7 +23,7 @@ st.markdown("""
         color: #2b2b2b !important;
     }
 
-    /* Tarjetas ERP unificadas (Fondo blanco sutil con bordes y acentos en Cian) */
+    /* Tarjetas ERP unificadas */
     .erp-card {
         background: #f0fbfc;
         backdrop-filter: blur(10px);
@@ -86,7 +86,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Estilo para los inputs de texto y desplegables (Selectbox) con bordes cian */
+    /* Estilo para los inputs de texto y desplegables */
     .stTextInput input, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important;
         color: #2b2b2b !important;
@@ -285,7 +285,12 @@ if not st.session_state.autenticado:
 # ==========================================
 # 🖥️ 3. BARRA LATERAL (NAVEGACIÓN)
 # ==========================================
-st.sidebar.write(f"👤 **Conectado:** {st.session_state.usuario_rol}")
+if st.session_state.usuario_rol == "Master":
+    nombre_mostrar = "Master 👑"
+else:
+    nombre_mostrar = st.session_state.db_admins[st.session_state.cedula_actual]["nombre"]
+
+st.sidebar.markdown(f"👋 **¡Bienvenido(a), {nombre_mostrar}!**")
 
 if st.session_state.modulo_actual != "Inicio":
     if st.sidebar.button("🏠 Menú Principal"):
