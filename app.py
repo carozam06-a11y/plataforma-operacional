@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 import os
 import openpyxl
+from openpyxl.cell.cell import MergedCell
 
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
@@ -180,7 +181,7 @@ DIR_DATOS = "datos_persistencia"
 if not os.path.exists(DIR_DATOS):
     os.makedirs(DIR_DATOS)
 
-EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
+EXCEL_EOR_MAESTRO = "EOR SEPTIEMBRE 2026.xlsx"
 
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
@@ -248,6 +249,18 @@ def guardar_mes(anio, mes_num, df):
     clave_mes = f"{anio}-{mes_num:02d}"
     ruta_csv = os.path.join(DIR_DATOS, f"registros_{clave_mes}.csv")
     df.to_csv(ruta_csv, index=False)
+
+def escribir_celda_segura(sheet, coordenada, valor):
+    """Evita errores de celdas combinadas (MergedCell) asignando al rango principal."""
+    celda = sheet[coordenada]
+    if isinstance(celda, MergedCell):
+        for rango in sheet.merged_cells.ranges:
+            if coordenada in rango:
+                min_row, min_col, _, _ = rango.bounds
+                sheet.cell(row=min_row, column=min_col, value=valor)
+                return
+    else:
+        sheet[coordenada] = valor
 
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
@@ -898,7 +911,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_edit
                 guardar_mes(anio_sel, mes_num, df_mes_activo)
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
@@ -1021,18 +1034,18 @@ elif st.session_state.modulo_actual == "EOR":
                     else:
                         ws_nueva_pa = wb_mod[nombre_hoja_pa]
 
-                    ws_nueva_eor['C2'] = tienda_auditada
-                    ws_nueva_eor['C3'] = f"{responsable_tienda} - {auditor_nombre}"
-                    ws_nueva_eor['C4'] = datetime.combine(fecha_auditoria, datetime.min.time())
+                    escribir_celda_segura(ws_nueva_eor, 'C2', tienda_auditada)
+                    escribir_celda_segura(ws_nueva_eor, 'C3', f"{responsable_tienda} - {auditor_nombre}")
+                    escribir_celda_segura(ws_nueva_eor, 'C4', datetime.combine(fecha_auditoria, datetime.min.time()))
 
                     brechas = [r for r in respuestas_usuario if r["Calificacion"] == "No"]
                     
-                    ws_nueva_pa['A1'] = "Plan de Acción — Mejora Continua EOR Zona 4"
-                    ws_nueva_pa['A3'] = "Accion correctiva / Plan de accion"
-                    ws_nueva_pa['B3'] = "Responsable"
-                    ws_nueva_pa['C3'] = "Fecha de ejecucion prevista"
-                    ws_nueva_pa['D3'] = "Comentarios / Hallazgos"
-                    ws_nueva_pa['E3'] = "Fecha de cierre real"
+                    escribir_celda_segura(ws_nueva_pa, 'A1', "Plan de Acción — Mejora Continua EOR Zona 4")
+                    escribir_celda_segura(ws_nueva_pa, 'A3', "Accion correctiva / Plan de accion")
+                    escribir_celda_segura(ws_nueva_pa, 'B3', "Responsable")
+                    escribir_celda_segura(ws_nueva_pa, 'C3', "Fecha de ejecucion prevista")
+                    escribir_celda_segura(ws_nueva_pa, 'D3', "Comentarios / Hallazgos")
+                    escribir_celda_segura(ws_nueva_pa, 'E3', "Fecha de cierre real")
                     
                     row_pa = 4
                     for b in brechas:
