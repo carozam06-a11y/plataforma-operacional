@@ -306,6 +306,18 @@ elif st.session_state.modulo_actual == "Finanzas":
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
     df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
 
+    # Cálculo de la meta proporcional del mes según el día calendario actual
+    hoy = datetime.now()
+    _, total_dias_mes = calendar.monthrange(anio_sel, mes_num)
+    if anio_sel == hoy.year and mes_num == hoy.month:
+        dia_actual = hoy.day
+    elif (anio_sel * 12 + mes_num) < (hoy.year * 12 + hoy.month):
+        dia_actual = total_dias_mes # Mes pasado cerrado
+    else:
+        dia_actual = 1 # Mes futuro
+    
+    pct_meta_tiempo = (dia_actual / total_dias_mes) * 100
+
     def obtener_consolidado(df_mes, df_presup):
         suma_mes = df_mes.groupby("Almacén")[["Venta Diaria ($)", "Transacciones / Clientes", "Unidades Vendidas", "Desperdicio (Unid)"]].sum().reset_index()
         consolidado = pd.merge(df_presup, suma_mes, on="Almacén")
@@ -350,7 +362,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         with tab_resumen:
             t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
             
-            st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel})")
+            st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel}) — Corte Día {dia_actual} ({pct_meta_tiempo:.1f}% del mes)")
             col_k1, col_k2, col_k3, col_k4 = st.columns(4)
             with col_k1:
                 st.markdown(f"""
@@ -374,10 +386,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                     </div>
                 """, unsafe_allow_html=True)
             with col_k4:
+                color_tarjeta_desp = "#28a745" if t_pct_desp_zona <= 10.0 else "#dc3545"
                 st.markdown(f"""
                     <div class="erp-card">
                         <div class="erp-title">⚠️ % DESPERDICIO ZONA</div>
-                        <div class="erp-value">{t_pct_desp_zona:.2f}%</div>
+                        <div class="erp-value" style="color: {color_tarjeta_desp};">{t_pct_desp_zona:.2f}%</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Máx. permitido: 10.0%</div>
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -398,6 +412,8 @@ elif st.session_state.modulo_actual == "Finanzas":
                 axis=1
             )
             
+            col_crecimiento_titulo = f"% Crecimiento {anio_sel} vs {anio_pasado}"
+            
             df_formato = df_mostrar.copy()
             df_formato["Presupuesto Mes ($)"] = df_formato["Presupuesto Mes ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato[col_vp_nombre] = df_formato[col_vp_nombre].apply(lambda x: f"${x:,.0f}")
@@ -405,23 +421,22 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_formato["Ticket Promedio ($)"] = df_formato["Ticket Promedio ($)"].apply(lambda x: f"${x:,.0f}")
             df_formato["Unidades Vendidas"] = df_formato["Unidades Vendidas"].apply(lambda x: f"{x:,}")
             df_formato["Desperdicio Acumulado (Unid)"] = df_formato["Desperdicio Acumulado (Unid)"].apply(lambda x: f"{x:,}")
-            df_formato[f"% Crecimiento {anio_sel} vs {anio_pasado}"] = df_mostrar["% Crecimiento Dinamico"].apply(lambda x: f"{x:.2f}%")
             df_formato["% Desperdicio Fila"] = df_formato["% Desperdicio"].apply(lambda x: f"{x:.2f}%")
             df_formato["% Cumplimiento Promedio"] = df_formato["% Cumplimiento"].apply(lambda x: f"{x:.2f}%")
+            df_formato[col_crecimiento_titulo] = df_mostrar["% Crecimiento Dinamico"].apply(lambda x: f"{x:.2f}%")
             
-            col_crecimiento_titulo = f"% Crecimiento {anio_sel} vs {anio_pasado}"
-            
+            # Orden solicitado: Crecimiento trasladado al final de la tabla
             df_para_mostrar = df_formato[[
                 "Almacén", "Presupuesto Mes ($)", col_vp_nombre, "Venta Acumulada Mes ($)", 
-                col_crecimiento_titulo, "Ticket Promedio ($)", "Unidades Vendidas", 
-                "Desperdicio Acumulado (Unid)", "% Desperdicio Fila", "% Cumplimiento Promedio"
+                "Ticket Promedio ($)", "Unidades Vendidas", "Desperdicio Acumulado (Unid)", 
+                "% Desperdicio Fila", "% Cumplimiento Promedio", col_crecimiento_titulo
             ]]
 
-            # Semáforo múltiple condicional para Cumplimiento, Crecimiento y Desperdicio (máximo 10%)
+            # Semáforo dinámico comparado contra el % calendario de desperdicio (ej. si pasamos el acumulado proporcional del mes)
             def color_semaforo_integral(row):
                 estilos = [''] * len(row)
                 
-                # Columna % Desperdicio Fila (Índice 8)
+                # Columna % Desperdicio Fila (Comparado contra el límite del 10%)
                 try:
                     val_desp = float(row['% Desperdicio Fila'].replace('%', '').strip())
                     idx_desp = row.index.get_loc('% Desperdicio Fila')
@@ -432,7 +447,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 except:
                     pass
 
-                # Columna % Cumplimiento Promedio (Índice 9)
+                # Columna % Cumplimiento Promedio
                 try:
                     val_cump = float(row['% Cumplimiento Promedio'].replace('%', '').strip())
                     idx_cump = row.index.get_loc('% Cumplimiento Promedio')
@@ -445,7 +460,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 except:
                     pass
 
-                # Columna de Crecimiento Dinámico
+                # Columna de Crecimiento Dinámico (Al final)
                 try:
                     val_crec = float(row[col_crecimiento_titulo].replace('%', '').strip())
                     idx_crec = row.index.get_loc(col_crecimiento_titulo)
@@ -524,6 +539,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     <div class="erp-card">
                         <div class="erp-title">⚠️ % DESPERDICIO</div>
                         <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Acum: {desp_tienda:,} unid</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -631,6 +647,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                 <div class="erp-card">
                     <div class="erp-title">⚠️ % DESPERDICIO</div>
                     <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Acum: {d_tienda:,} unid</div>
                 </div>
             """, unsafe_allow_html=True)
 
