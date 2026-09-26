@@ -8,38 +8,38 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno & Unificado)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Fondo Magenta Suave & Bordes Naranja Dunkin)
 # ==========================================
 st.markdown("""
     <style>
-    /* Fondo general dinámico con degradado moderno */
+    /* Fondo general dinámico con degradado en magenta muy suave y elegante */
     .stApp {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        background: linear-gradient(135deg, #1a0b1c, #331438, #220d26);
         background-attachment: fixed;
         color: #ffffff;
     }
 
-    /* Tarjetas ERP unificadas en toda la plataforma */
+    /* Tarjetas ERP unificadas en toda la plataforma (Borde Naranja Corporativo) */
     .erp-card {
-        background: rgba(30, 30, 47, 0.85);
+        background: rgba(35, 15, 38, 0.85);
         backdrop-filter: blur(10px);
-        border: 1.5px solid #00d2ff;
+        border: 1.5px solid #ff6b00;
         border-radius: 16px;
         padding: 22px;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(255, 107, 0, 0.2);
         margin-bottom: 15px;
         transition: 0.3s;
     }
     .erp-card:hover {
-        border-color: #ff007f;
-        box-shadow: 0 6px 20px rgba(255, 0, 127, 0.35);
+        border-color: #ff8c33;
+        box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
     }
     .erp-title {
         font-size: 16px;
         font-weight: 700;
-        color: #ff007f;
+        color: #ff8c33;
         margin-bottom: 8px;
     }
     .erp-value {
@@ -50,12 +50,12 @@ st.markdown("""
 
     /* Contenedor de Login Estilizado */
     .login-container {
-        background: rgba(30, 30, 47, 0.85);
+        background: rgba(35, 15, 38, 0.9);
         backdrop-filter: blur(10px);
-        border: 2px solid #00d2ff;
+        border: 2px solid #ff6b00;
         border-radius: 20px;
         padding: 40px;
-        box-shadow: 0 8px 32px 0 rgba(0, 210, 255, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(255, 107, 0, 0.3);
         max-width: 600px;
         margin: 50px auto;
         color: white;
@@ -83,21 +83,21 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Estilo para los inputs de texto */
+    /* Estilo para los inputs de texto con enfoque naranja */
     .stTextInput input {
-        background-color: #12121c !important;
+        background-color: #1a0b1c !important;
         color: white !important;
-        border: 1px solid #2d2d44 !important;
+        border: 1px solid #4a1f4f !important;
         border-radius: 8px !important;
     }
     .stTextInput input:focus {
-        border-color: #ff007f !important;
-        box-shadow: 0 0 8px rgba(255, 0, 127, 0.5) !important;
+        border-color: #ff6b00 !important;
+        box-shadow: 0 0 8px rgba(255, 107, 0, 0.5) !important;
     }
     
     div.stButton > button:hover {
-        border-color: #ff007f !important;
-        color: #ff007f !important;
+        border-color: #ff6b00 !important;
+        color: #ff6b00 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -775,7 +775,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                                 axis=1
                             )
                             guardar_mes(anio_sel, mes_num, df_reg_excel)
-                            st.success("¡Registros diarios cargados y actualizados correctamente en el sistema!")
+                            st.success("¡Registros diarios cargados y actualizados correctamente em el sistema!")
                             st.rerun()
                         else:
                             st.error("El archivo Excel no tiene las columnas obligatorias ('Fecha y Día', 'Almacén').")
@@ -874,7 +874,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
         with col_btn_save:
             if st.button("Guardar Reporte Diario de la Tienda"):
-                df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
+                df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
