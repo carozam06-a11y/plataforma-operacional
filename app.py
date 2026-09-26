@@ -985,17 +985,21 @@ elif st.session_state.modulo_actual == "EOR":
             if any(exc.lower() in cat_actual.lower() for exc in modulos_excluidos):
                 continue
 
-            # Omitir RSI 7 para unificarlo con RSI 4
-            if val_id and str(val_id).strip() == "RSI 7":
+            # Omitir RSI 7 (unificado en RSI 4) y RSI 8 (excluido)
+            id_str = str(val_id).strip() if val_id else ""
+            if id_str in ["RSI 7", "RSI 8"]:
                 continue
 
             if val_id and val_desc and str(val_id).startswith(("RSI", "FS-", "RC", "GS", "RE", "TR", "Pregunta", "MD", "ES", "LS")):
-                id_str = str(val_id).strip()
                 desc_str = str(val_desc).strip()
                 
                 # Unificar RSI 4 con RSI 7
                 if id_str == "RSI 4":
                     desc_str = "Libre de atascos de alcantarillado e inundaciones"
+                
+                # Reenumerar RSI 9 como número 7 si es necesario en etiqueta (o dejar su ID tal cual)
+                if id_str == "RSI 9":
+                    id_str = "RSI 7 (RSI 9)"
 
                 preguntas_eor.append({
                     "Categoria": cat_actual if cat_actual else "General",
