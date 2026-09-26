@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno & Login Dinámico)
+# 🎨 ESTILOS CSS PERSONALIZADOS (Estilo ERP Moderno & Magenta)
 # ==========================================
 st.markdown("""
     <style>
@@ -19,12 +19,12 @@ st.markdown("""
         color: #ffffff;
     }
 
-    /* Tarjetas ERP estándar */
+    /* Tarjetas ERP interactivas (Efecto Hover Magenta) */
     .erp-card {
         background-color: #1e1e2f;
         border: 1px solid #2d2d44;
         border-radius: 12px;
-        padding: 20px;
+        padding: 24px;
         color: white;
         text-align: center;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
@@ -32,13 +32,13 @@ st.markdown("""
         transition: 0.3s;
     }
     .erp-card:hover {
-        border-color: #ff6b00;
-        box-shadow: 0 6px 12px rgba(255, 107, 0, 0.2);
+        border-color: #ff007f;
+        box-shadow: 0 6px 15px rgba(255, 0, 127, 0.3);
     }
     .erp-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: #a0a0c0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #ff007f;
         margin-bottom: 8px;
     }
     .erp-value {
@@ -47,7 +47,7 @@ st.markdown("""
         color: #ffffff;
     }
 
-    /* Contenedor de Login Estilizado con Borde Azul Brillante */
+    /* Contenedor de Login con borde azul brillante */
     .login-container {
         background: rgba(30, 30, 47, 0.85);
         backdrop-filter: blur(10px);
@@ -76,16 +76,16 @@ st.markdown("""
         margin-bottom: 30px;
     }
 
-    /* Estilo para los inputs dentro del login */
-    .stTextInput input {
-        background-color: #12121c !important;
-        color: white !important;
-        border: 1px solid #2d2d44 !important;
-        border-radius: 8px !important;
-    }
+    /* Estilo para los inputs y elementos activos en Magenta */
     .stTextInput input:focus {
-        border-color: #00d2ff !important;
-        box-shadow: 0 0 8px rgba(0, 210, 255, 0.5) !important;
+        border-color: #ff007f !important;
+        box-shadow: 0 0 8px rgba(255, 0, 127, 0.5) !important;
+    }
+    
+    /* Cambiar color de selección/foco en Streamlit a Magenta */
+    div.stButton > button:hover {
+        border-color: #ff007f !important;
+        color: #ff007f !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -93,8 +93,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -216,7 +216,7 @@ if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
 
 # ==========================================
-# 🔐 2. SISTEMA DE LOGIN (DISEÑO DINÁMICO)
+# 🔐 2. SISTEMA DE LOGIN 
 # ==========================================
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
@@ -234,8 +234,6 @@ def verificar_credenciales(usuario, password):
 
 if not st.session_state.autenticado:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    
-    # Contenedor con estilo moderno y borde azul brillante
     st.markdown("""
         <div class="login-container">
             <div class="login-title">🍩 Plataforma Operacional Zona 4</div>
@@ -280,7 +278,7 @@ if st.sidebar.button("Cerrar Sesión"):
     st.rerun()
 
 # ==========================================
-# 🗂️ 4. ENRUTADOR DE MÓDULOS (ESTILO ERP)
+# 🗂️ 4. ENRUTADOR DE MÓDULOS (ACCESO DIRECTO POR TARJETA)
 # ==========================================
 
 if st.session_state.modulo_actual == "Inicio":
@@ -291,13 +289,14 @@ if st.session_state.modulo_actual == "Inicio":
     col1, col2, col3 = st.columns(3)
     
     with col1:
+        # Tarjeta interactiva de Finanzas que actúa directamente como botón de acceso
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">💰 FINANZAS</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Presupuesto, Ventas & Desperdicio</div>
+                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Presupuesto, Ventas & Desperdicio</div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("Abrir Módulo Finanzas", use_container_width=True):
+        if st.button("🚀 Ingresar a Finanzas", use_container_width=True):
             st.session_state.modulo_actual = "Finanzas"
             st.rerun()
             
@@ -306,10 +305,10 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📦 INVENTARIOS</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Control de stock y pedidos</div>
+                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Control de stock y pedidos</div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("Abrir Módulo Inventarios", use_container_width=True):
+        if st.button("🚀 Ingresar a Inventarios", use_container_width=True):
             st.session_state.modulo_actual = "Inventarios"
             st.rerun()
 
@@ -317,10 +316,10 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📅 PLANILLA SEMANAL</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Turnos, HeadCount & Rotación Admins</div>
+                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Turnos, HeadCount & Rotación Admins</div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("Abrir Módulo Planilla", use_container_width=True):
+        if st.button("🚀 Ingresar a Planilla", use_container_width=True):
             st.session_state.modulo_actual = "Planilla"
             st.rerun()
             
@@ -329,10 +328,10 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📋 AUDITORÍA EOR</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Estándares operativos de calidad</div>
+                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Estándares operativos de calidad</div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("Abrir Módulo EOR", use_container_width=True):
+        if st.button("🚀 Ingresar a EOR", use_container_width=True):
             st.session_state.modulo_actual = "EOR"
             st.rerun()
 
@@ -340,10 +339,10 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">🔮 PREVISIONES</div>
-                <div style="font-size: 13px; color: #ccc; margin-bottom: 10px;">Proyecciones y metas de zona</div>
+                <div style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Proyecciones y metas de zona</div>
             </div>
         """, unsafe_allow_html=True)
-        if st.button("Abrir Módulo Previsiones", use_container_width=True):
+        if st.button("🚀 Ingresar a Previsiones", use_container_width=True):
             st.session_state.modulo_actual = "Previsiones"
             st.rerun()
 
@@ -864,11 +863,11 @@ elif st.session_state.modulo_actual == "Finanzas":
         col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
         with col_btn_save:
             if st.button("Guardar Reporte Diario de la Tienda"):
-                df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
+                df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_edit
                 guardar_mes(anio_sel, mes_num, df_mes_activo)
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
