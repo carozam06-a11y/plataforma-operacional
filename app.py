@@ -144,8 +144,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "1032463775"      
-CLAVE_MASTER = "Carolina2026"  
+CEDULA_MASTER = "TU_CEDULA"      
+CLAVE_MASTER = "TU_NOMBRE_FECHA"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -181,7 +181,7 @@ DIR_DATOS = "datos_persistencia"
 if not os.path.exists(DIR_DATOS):
     os.makedirs(DIR_DATOS)
 
-EXCEL_EOR_MAESTRO = "EOR SEPTIEMBRE 2026.xlsx"
+EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
@@ -911,7 +911,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_edit
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
                 guardar_mes(anio_sel, mes_num, df_mes_activo)
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
@@ -950,7 +950,7 @@ elif st.session_state.modulo_actual == "Finanzas":
 # ---> MÓDULO DE AUDITORÍA EOR (CONECTADO AL EXCEL OFICIAL) <---
 elif st.session_state.modulo_actual == "EOR":
     st.title("📋 Módulo de Auditoría EOR - Zona 4")
-    st.write("Realiza la auditoría oficial sincronizada directamente con el archivo Excel maestro (**EOR SEPTIEMBRE 2026.xlsx**):")
+    st.write(f"Realiza la auditoría oficial sincronizada directamente con el archivo Excel maestro (**{EXCEL_EOR_MAESTRO}**):")
 
     if not os.path.exists(EXCEL_EOR_MAESTRO):
         st.error(f"⚠️ No se encontró el archivo maestro '{EXCEL_EOR_MAESTRO}' en el directorio. Asegúrate de colocarlo en la misma carpeta del proyecto.")
