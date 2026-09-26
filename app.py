@@ -911,7 +911,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                     lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                     axis=1
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_edit
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
                 guardar_mes(anio_sel, mes_num, df_mes_activo)
                 st.success("¡Reporte diario guardado de forma permanente en el sistema!")
                 st.rerun()
@@ -969,7 +969,7 @@ elif st.session_state.modulo_actual == "EOR":
             "Normas de equipamiento"
         ]
 
-        # Extraer estructura de ítems desde la hoja ' Revisión de operaciones' excluyendo los módulos indicados
+        # Extraer estructura de ítems desde la hoja ' Revisión de operaciones'
         preguntas_eor = []
         cat_actual = ""
         
@@ -985,11 +985,22 @@ elif st.session_state.modulo_actual == "EOR":
             if any(exc.lower() in cat_actual.lower() for exc in modulos_excluidos):
                 continue
 
+            # Omitir RSI 7 para unificarlo con RSI 4
+            if val_id and str(val_id).strip() == "RSI 7":
+                continue
+
             if val_id and val_desc and str(val_id).startswith(("RSI", "FS-", "RC", "GS", "RE", "TR", "Pregunta", "MD", "ES", "LS")):
+                id_str = str(val_id).strip()
+                desc_str = str(val_desc).strip()
+                
+                # Unificar RSI 4 con RSI 7
+                if id_str == "RSI 4":
+                    desc_str = "Libre de atascos de alcantarillado e inundaciones"
+
                 preguntas_eor.append({
                     "Categoria": cat_actual if cat_actual else "General",
-                    "Id": str(val_id).strip(),
-                    "Pregunta": str(val_desc).strip()
+                    "Id": id_str,
+                    "Pregunta": desc_str
                 })
 
         with st.form("form_eor_maestro"):
