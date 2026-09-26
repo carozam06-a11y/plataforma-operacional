@@ -388,15 +388,18 @@ if st.session_state.modulo_actual == "Inicio":
 elif st.session_state.modulo_actual == "Finanzas":
     st.title("📊 Módulo de Finanzas - Zona 4")
 
-    col_per1, col_per2 = st.columns([2, 4])
-    with col_per1:
+    # Selector de Año y Mes uno al lado del otro
+    col_anio, col_mes = st.columns(2)
+    with col_anio:
+        anio_sel = st.selectbox("Año Actual:", [2025, 2026, 2027, 2028], index=1)
+    with col_mes:
         meses_nombres = {
             1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
             7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
         }
-        anio_sel = st.selectbox("Año Actual:", [2025, 2026, 2027, 2028], index=1)
-        mes_sel_nombre = st.selectbox("Selecciona el Mes a Consultar / Operar:", list(meses_nombres.values()), index=8)
-        mes_num = [k for k, v in meses_nombres.items() if v == mes_sel_nombre][0]
+        mes_sel_nombre = st.selectbox("Mes a Consultar / Operar:", list(meses_nombres.values()), index=8)
+    
+    mes_num = [k for k, v in meses_nombres.items() if v == mes_sel_nombre][0]
 
     anio_pasado = anio_sel - 1
     col_vp_nombre = f"Venta Mes {anio_pasado} ($)"
