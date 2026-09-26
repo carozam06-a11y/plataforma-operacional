@@ -341,7 +341,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                     key=f"rango_fechas_{anio_sel}_{mes_num}"
                 )
             
-            # Validar y extraer fechas de inicio y fin del selector
             if isinstance(rango_fechas, tuple) and len(rango_fechas) == 2:
                 f_inicio, f_fin = rango_fechas
             elif isinstance(rango_fechas, tuple) and len(rango_fechas) == 1:
@@ -350,14 +349,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                 f_inicio = primer_dia_mes
                 f_fin = fecha_fin_default
 
-            # Calcular número de días en el rango seleccionado
             if f_inicio > f_fin:
                 f_inicio, f_fin = f_fin, f_inicio
                 
             delta_dias = (f_fin - f_inicio).days + 1
             pct_meta_tiempo = (delta_dias / total_dias_mes) * 100
 
-            # Filtrar dataframe general según el rango de fechas seleccionado
             def filtrar_por_rango(df, inicio, fin):
                 df_copia = df.copy()
                 df_copia["Fecha_Obj"] = pd.to_datetime(df_copia["Fecha y Día"].apply(lambda x: x.split(" ")[0])).dt.date
@@ -536,6 +533,19 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_estilizado = df_para_mostrar.style.apply(color_semaforo_integral, axis=1)
             st.dataframe(df_estilizado, use_container_width=True)
 
+            # 📥 Botón de Exportación a Excel - Análisis Integral
+            output_integral = BytesIO()
+            with pd.ExcelWriter(output_integral, engine='openpyxl') as writer:
+                df_para_mostrar.to_excel(writer, index=False, sheet_name='Analisis_Integral_Zona4')
+            excel_integral_bytes = output_integral.getvalue()
+            
+            st.download_button(
+                label=f"📥 Exportar Análisis Integral a Excel (Rango {f_inicio} al {f_fin})",
+                data=excel_integral_bytes,
+                file_name=f"Analisis_Integral_Zona4_{f_inicio}_al_{f_fin}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
         with tab_presupuestos:
             st.subheader(f"⚙️ Configuración de Presupuestos & Venta {anio_pasado} - {mes_sel_nombre} {anio_sel}")
             st.write(f"Modifica el presupuesto proyectado y registra la venta real obtenida en el mismo mes del año **{anio_pasado}** para activar el comparativo dinámico:")
@@ -548,8 +558,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                 st.rerun()
             
         with tab_individual:
-            # Para el registro diario mantenemos el corte D-1 por defecto
             dia_corte_ind = dia_corte_default
+            def filtrar_por_rango(df, inicio, fin):
+                df_copia = df.copy()
+                df_copia["Fecha_Obj"] = pd.to_datetime(df_copia["Fecha y Día"].apply(lambda x: x.split(" ")[0])).dt.date
+                return df_copia[(df_copia["Fecha_Obj"] >= inicio) & (df_copia["Fecha_Obj"] <= fin)]
+
             df_mes_corte_ind = filtrar_por_rango(df_mes_activo, primer_dia_mes, datetime(anio_sel, mes_num, min(dia_corte_ind, total_dias_mes)).date())
 
             st.subheader(f"Registro Diario por Tienda - {mes_sel_nombre} {anio_sel}")
@@ -631,15 +645,31 @@ elif st.session_state.modulo_actual == "Finanzas":
             
             df_diario_edit = st.data_editor(df_tienda_diario, num_rows="fixed", key=f"edit_diario_{almacen_sel}_{anio_sel}_{mes_num}")
             
-            if st.button("Guardar Registro Diario de esta Tienda"):
-                df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
-                    lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
-                    axis=1
+            col_btn_save, col_btn_exp = st.columns([1, 1])
+            with col_btn_save:
+                if st.button("Guardar Registro Diario de esta Tienda"):
+                    df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
+                        lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
+                        axis=1
+                    )
+                    df_mes_activo.loc[df_mes_activo["Almacén"] == almacen_sel] = df_diario_edit
+                    guardar_mes(anio_sel, mes_num, df_mes_activo)
+                    st.success(f"¡Registros de {almacen_sel} para {mes_sel_nombre} guardados de forma permanente!")
+                    st.rerun()
+
+            with col_btn_exp:
+                # 📥 Botón de Exportación a Excel - Registro Diario de la Tienda
+                output_tienda = BytesIO()
+                with pd.ExcelWriter(output_tienda, engine='openpyxl') as writer:
+                    df_diario_edit.to_excel(writer, index=False, sheet_name=f'Registro_{almacen_sel[:10]}')
+                excel_tienda_bytes = output_tienda.getvalue()
+                
+                st.download_button(
+                    label=f"📥 Exportar Registro de {almacen_sel[:15]}...",
+                    data=excel_tienda_bytes,
+                    file_name=f"Registro_Diario_{almacen_sel.replace(' ', '_')}_{mes_sel_nombre}_{anio_sel}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == almacen_sel] = df_diario_edit
-                guardar_mes(anio_sel, mes_num, df_mes_activo)
-                st.success(f"¡Registros de {almacen_sel} para {mes_sel_nombre} guardados de forma permanente!")
-                st.rerun()
 
         with tab_excel:
             st.subheader("Carga Masiva y Plantilla de Registros Diarios")
@@ -764,15 +794,30 @@ elif st.session_state.modulo_actual == "Finanzas":
         
         df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", key=f"admin_diario_{tienda}_{anio_sel}_{mes_num}")
         
-        if st.button("Guardar Reporte Diario de la Tienda"):
-            df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
-                lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
-                axis=1
+        col_btn_save, col_btn_exp = st.columns([1, 1])
+        with col_btn_save:
+            if st.button("Guardar Reporte Diario de la Tienda"):
+                df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
+                    lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
+                    axis=1
+                )
+                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
+                guardar_mes(anio_sel, mes_num, df_mes_activo)
+                st.success("¡Reporte diario guardado de forma permanente en el sistema!")
+                st.rerun()
+
+        with col_btn_exp:
+            output_tienda_adm = BytesIO()
+            with pd.ExcelWriter(output_tienda_adm, engine='openpyxl') as writer:
+                df_diario_admin_edit.to_excel(writer, index=False, sheet_name='Mi_Tienda_Registro')
+            excel_tienda_adm_bytes = output_tienda_adm.getvalue()
+            
+            st.download_button(
+                label=f"📥 Exportar Mi Registro Diario a Excel",
+                data=excel_tienda_adm_bytes,
+                file_name=f"Registro_Diario_{tienda.split(' - ')[0]}_{mes_sel_nombre}_{anio_sel}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
-            guardar_mes(anio_sel, mes_num, df_mes_activo)
-            st.success("¡Reporte diario guardado de forma permanente en el sistema!")
-            st.rerun()
 
 # ---> MÓDULOS EN CONSTRUCCIÓN <---
 elif st.session_state.modulo_actual == "Inventarios":
