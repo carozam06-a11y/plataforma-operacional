@@ -44,8 +44,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "TU_CEDULA"      
-CLAVE_MASTER = "TU_NOMBRE_FECHA"  
+CEDULA_MASTER = "1032463775"      
+CLAVE_MASTER = "Carolina2026"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
@@ -358,11 +358,14 @@ elif st.session_state.modulo_actual == "Finanzas":
     def calcular_metricas_globales(df_con, df_presup):
         total_venta = df_con["Venta Acumulada Mes ($)"].sum()
         total_presupuesto = df_presup["Presupuesto Mes ($)"].sum()
+        
+        # Cumplimiento tradicional (Venta Acumulada / Presupuesto Total Mes)
         cumplimiento = (total_venta / total_presupuesto * 100) if total_presupuesto > 0 else 0
         
-        # Meta presupuestada acumulada a la fecha de corte D-1
+        # Meta presupuestada acumulada a la fecha de corte D-1 y su cumplimiento proporcional
         total_presupuesto_zona = total_presupuesto
         meta_acumulada_a_la_fecha = (total_presupuesto_zona / total_dias_mes) * dia_corte
+        cumplimiento_proporcional_fecha = (total_venta / meta_acumulada_a_la_fecha * 100) if meta_acumulada_a_la_fecha > 0 else 0
         
         total_transacciones = df_mes_corte["Transacciones / Clientes"].sum()
         ticket_prom_zona = (total_venta / total_transacciones) if total_transacciones > 0 else 0.0
@@ -371,7 +374,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         total_desp_zona = df_con["Desperdicio Acumulado (Unid)"].sum()
         pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
         
-        return total_venta, cumplimiento, pct_desp_zona, ticket_prom_zona, meta_acumulada_a_la_fecha
+        return total_venta, cumplimiento, cumplimiento_proporcional_fecha, pct_desp_zona, ticket_prom_zona, meta_acumulada_a_la_fecha
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual, tab_excel = st.tabs([
@@ -379,7 +382,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         ])
         
         with tab_resumen:
-            t_venta, t_cumplimiento, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
+            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona = calcular_metricas_globales(df_consolidado, df_presupuesto_activo)
             
             st.markdown(f"### 🌐 Indicadores Globales de la Zona 4 ({mes_sel_nombre.upper()} {anio_sel}) — Corte D-1 al Día {dia_corte} ({pct_meta_tiempo:.1f}% del mes)")
             col_k1, col_k2, col_k3, col_k4 = st.columns(4)
@@ -392,10 +395,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                     </div>
                 """, unsafe_allow_html=True)
             with col_k2:
+                color_cump_card = "#28a745" if t_cump_prop >= 100 else ("#ffc107" if t_cump_prop >= 85 else "#dc3545")
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📈 CUMPLIMIENTO ZONA</div>
-                        <div class="erp-value">{t_cumplimiento:.2f}%</div>
+                        <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
+                        <div class="erp-value" style="color: {color_cump_card};">{t_cump_prop:.2f}%</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {t_cumplimiento:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k3:
@@ -521,6 +526,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             desp_tienda = df_tienda_corte["Desperdicio (Unid)"].sum()
             
             cump_tienda = (venta_tienda / presupuesto_tienda * 100) if presupuesto_tienda > 0 else 0.0
+            cump_prop_tienda = (venta_tienda / meta_presup_tienda_fecha * 100) if meta_presup_tienda_fecha > 0 else 0.0
             crecimiento_tienda = ((venta_tienda - venta_prop_pasada_tienda) / venta_prop_pasada_tienda * 100) if venta_prop_pasada_tienda > 0 else 0.0
             ticket_tienda = (venta_tienda / trans_tienda) if trans_tienda > 0 else 0.0
             pct_desp_tienda = (desp_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
@@ -536,10 +542,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                     </div>
                 """, unsafe_allow_html=True)
             with col_t2:
+                color_cump_card_tienda = "#28a745" if cump_prop_tienda >= 100 else ("#ffc107" if cump_prop_tienda >= 85 else "#dc3545")
                 st.markdown(f"""
                     <div class="erp-card">
-                        <div class="erp-title">📈 CUMPLIMIENTO</div>
-                        <div class="erp-value">{cump_tienda:.2f}%</div>
+                        <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
+                        <div class="erp-value" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {cump_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t3:
@@ -633,6 +641,7 @@ elif st.session_state.modulo_actual == "Finanzas":
         d_tienda = df_mi_tienda_corte["Desperdicio (Unid)"].sum()
         
         c_tienda = (v_tienda / presupuesto_tienda * 100) if presupuesto_tienda > 0 else 0.0
+        cump_prop_tienda = (v_tienda / meta_presup_tienda_fecha * 100) if meta_presup_tienda_fecha > 0 else 0.0
         crecimiento_tienda = ((v_tienda - venta_prop_pasada_tienda) / venta_prop_pasada_tienda * 100) if venta_prop_pasada_tienda > 0 else 0.0
         tk_tienda = (v_tienda / tr_tienda) if tr_tienda > 0 else 0.0
         pct_desp_tienda = (d_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
@@ -649,10 +658,12 @@ elif st.session_state.modulo_actual == "Finanzas":
                 </div>
             """, unsafe_allow_html=True)
         with col_ad2:
+            color_cump_card_tienda = "#28a745" if cump_prop_tienda >= 100 else ("#ffc107" if cump_prop_tienda >= 85 else "#dc3545")
             st.markdown(f"""
                 <div class="erp-card">
-                    <div class="erp-title">📈 CUMPLIMIENTO</div>
-                    <div class="erp-value">{c_tienda:.2f}%</div>
+                    <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
+                    <div class="erp-value" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">Cump. Mes Total: {c_tienda:.2f}%</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad3:
