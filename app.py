@@ -251,19 +251,25 @@ def guardar_mes(anio, mes_num, df):
     df.to_csv(ruta_csv, index=False)
 
 def escribir_celda_segura(sheet, coordenada, valor):
-    """Elimina cualquier restricción de celda combinada en la coordenada y escribe directamente sin error."""
+    """Descombina el rango si existe y escribe directamente en la celda."""
     import openpyxl.utils
     col_letra = ''.join([c for c in coordenada if c.isalpha()])
     row_num = int(''.join([c for c in coordenada if c.isdigit()]))
     col_num = openpyxl.utils.column_index_from_string(col_letra)
     
-    # Descombinar cualquier rango que afecte a esta celda específica
     for rango in list(sheet.merged_cells.ranges):
         if row_num >= rango.min_row and row_num <= rango.max_row and col_num >= rango.min_col and col_num <= rango.max_col:
             sheet.unmerge_cells(str(rango))
             
-    # Escribir directamente en la celda
     sheet.cell(row=row_num, column=col_num, value=valor)
+
+def escribir_celda_por_ indices(sheet, row, col, valor):
+    """Descombina el rango si existe y escribe por número de fila y columna."""
+    for rango in list(sheet.merged_cells.ranges):
+        if row >= rango.min_row and row <= rango.max_row and col >= rango.min_col and col <= rango.max_col:
+            sheet.unmerge_cells(str(rango))
+            
+    sheet.cell(row=row, column=col, value=valor)
 
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
@@ -307,7 +313,7 @@ if not st.session_state.autenticado:
                 st.session_state.cedula_actual = cedula
                 st.rerun()
             else:
-                st.error("Cédula o contraseña incorrectos.")
+                st.error("Cédula ou contraseña incorrectos.")
                 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -1074,19 +1080,19 @@ elif st.session_state.modulo_actual == "EOR":
                     brechas = [r for r in respuestas_usuario if r["Calificacion"] == "No"]
                     
                     escribir_celda_segura(ws_nueva_pa, 'A1', "Plan de Acción — Mejora Continua EOR Zona 4")
-                    escribir_celda_segura(ws_nueva_pa, 'A3', "Accion correctiva / Plan de accion")
-                    escribir_celda_segura(ws_nueva_pa, 'B3', "Responsable")
-                    escribir_celda_segura(ws_nueva_pa, 'C3', "Fecha de ejecucion prevista")
-                    escribir_celda_segura(ws_nueva_pa, 'D3', "Comentarios / Hallazgos")
-                    escribir_celda_segura(ws_nueva_pa, 'E3', "Fecha de cierre real")
+                    escribir_celda_por_indices(ws_nueva_pa, 3, 1, "Accion correctiva / Plan de accion")
+                    escribir_celda_por_indices(ws_nueva_pa, 3, 2, "Responsable")
+                    escribir_celda_por_indices(ws_nueva_pa, 3, 3, "Fecha de ejecucion prevista")
+                    escribir_celda_por_indices(ws_nueva_pa, 3, 4, "Comentarios / Hallazgos")
+                    escribir_celda_por_indices(ws_nueva_pa, 3, 5, "Fecha de cierre real")
                     
                     row_pa = 4
                     for b in brechas:
-                        ws_nueva_pa.cell(row=row_pa, column=1, value=f"Atender hallazgo en [{b['Id']}]: {b['Pregunta']}")
-                        ws_nueva_pa.cell(row=row_pa, column=2, value=responsable_tienda)
-                        ws_nueva_pa.cell(row=row_pa, column=3, value="INMEDIATO / 5 DÍAS")
-                        ws_nueva_pa.cell(row=row_pa, column=4, value=b['Observacion'])
-                        ws_nueva_pa.cell(row=row_pa, column=5, value="")
+                        escribir_celda_por_indices(ws_nueva_pa, row_pa, 1, f"Atender hallazgo en [{b['Id']}]: {b['Pregunta']}")
+                        escribir_celda_por_indices(ws_nueva_pa, row_pa, 2, responsable_tienda)
+                        escribir_celda_por_indices(ws_nueva_pa, row_pa, 3, "INMEDIATO / 5 DÍAS")
+                        escribir_celda_por_indices(ws_nueva_pa, row_pa, 4, b['Observacion'])
+                        escribir_celda_por_indices(ws_nueva_pa, row_pa, 5, "")
                         row_pa += 1
 
                     wb_mod.save(EXCEL_EOR_MAESTRO)
