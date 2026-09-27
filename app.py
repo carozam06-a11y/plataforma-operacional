@@ -263,7 +263,7 @@ def escribir_celda_segura(sheet, coordenada, valor):
             
     sheet.cell(row=row_num, column=col_num, value=valor)
 
-def escribir_celda_por_ indices(sheet, row, col, valor):
+def escribir_celda_por_indices(sheet, row, col, valor):
     """Descombina el rango si existe y escribe por número de fila y columna."""
     for rango in list(sheet.merged_cells.ranges):
         if row >= rango.min_row and row <= rango.max_row and col >= rango.min_col and col <= rango.max_col:
@@ -313,7 +313,7 @@ if not st.session_state.autenticado:
                 st.session_state.cedula_actual = cedula
                 st.rerun()
             else:
-                st.error("Cédula ou contraseña incorrectos.")
+                st.error("Cédula o contraseña incorrectos.")
                 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
