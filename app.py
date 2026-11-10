@@ -176,15 +176,17 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 def conectar_google_sheets():
     creds_dict = dict(st.secrets["gcp_service_account"])
     
-    # Reconstrucción estricta del formato PEM para la llave privada
     if "private_key" in creds_dict:
         pk = str(creds_dict["private_key"])
-        # Limpiamos barras escapadas dobles y aseguramos los saltos de línea reales
+        # Reemplazamos saltos de línea escapados y limpiamos caracteres erróneos
         pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
+        
+        # Aseguramos el formato estándar PEM de la llave privada
         if not pk.startswith("-----BEGIN PRIVATE KEY-----"):
             pk = "-----BEGIN PRIVATE KEY-----\n" + pk.strip()
         if not pk.endswith("-----END PRIVATE KEY-----"):
             pk = pk.strip() + "\n-----END PRIVATE KEY-----"
+            
         creds_dict["private_key"] = pk
         
     if "token_uri" not in creds_dict:
