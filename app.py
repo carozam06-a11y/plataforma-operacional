@@ -179,11 +179,38 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
 import gspread
 
-# Conexión centralizada con Google Sheets utilizando gspread nativo
+# ==========================================
+# ☁️ CONEXIÓN Y BASE DE DATOS EN GOOGLE SHEETS
+# ==========================================
+
 def conectar_google_sheets():
     gc = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
     sheet = gc.open("Plataforma_Operacional_Zona4_Master").sheet1
     return sheet
+
+def obtener_o_crear_personal():
+    try:
+        sheet = conectar_google_sheets()
+        registros = sheet.get_all_records()
+        if not registros:
+            df_inicial = pd.DataFrame([
+                {
+                    "Cedula": "101010101",
+                    "Nombre Completo": "Camilo Torres",
+                    "Rol": "Administrador / Líder",
+                    "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                    "Fecha Ingreso": "2024-01-15",
+                    "Cumpleanos": "1995-05-12",
+                    "Vencimiento Examen Medico": "2026-06-01",
+                    "Vencimiento Manipulacion Alimentos": "2026-06-01"
+                }
+            ])
+            sheet.update([df_inicial.columns.values.tolist()] + df_inicial.values.tolist())
+            return df_inicial
+        return pd.DataFrame(registros)
+    except Exception as e:
+        st.error(f"Error al conectar con Google Sheets: {e}")
+        return pd.DataFrame(columns=["Cedula", "Nombre Completo", "Rol", "Tiendas Asignadas", "Fecha Ingreso", "Cumpleanos", "Vencimiento Examen Medico", "Vencimiento Manipulacion Alimentos"])
 
 def guardar_personal(df):
     try:
