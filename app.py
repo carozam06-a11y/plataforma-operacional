@@ -10,103 +10,126 @@ from openpyxl.cell.cell import MergedCell
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
-# 🎨 ESTILOS CSS PERSONALIZADOS (Diseño ERP Unificado)
+# 🎨 ESTILOS CSS MODERNOS (Flexbox, CSS Grid 2D & Responsive)
 # ==========================================
 st.markdown("""
     <style>
+    /* Estilos base y tipografía limpia */
     .stApp {
-        background-color: #ffffff;
-        color: #2b2b2b;
+        background-color: #f8f9fa;
+        color: #212529;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     h1, h2, h3, h4, h5, h6, p, span, label {
-        color: #2b2b2b !important;
+        color: #212529 !important;
     }
-    .erp-card {
-        background: #f0fbfc;
-        backdrop-filter: blur(10px);
-        border: 1.5px solid #00b4d8;
+
+    /* Contenedor Grid 2D moderno para los menús principales */
+    .grid-menu-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    /* Tarjetas estilo ERP Moderno con Flexbox */
+    .erp-card-modern {
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
         border-radius: 16px;
-        padding: 22px;
-        color: #2b2b2b;
+        padding: 24px;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 180, 216, 0.15);
-        margin-bottom: 15px;
-        min-height: 165px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
-        transition: 0.3s;
+        transition: all 0.3s ease;
+        min-height: 180px;
     }
-    .erp-card:hover {
-        border-color: #0077b6;
-        box-shadow: 0 6px 20px rgba(0, 119, 182, 0.25);
+    .erp-card-modern:hover {
+        transform: translateY(-4px);
+        border-color: #00b4d8;
+        box-shadow: 0 8px 25px rgba(0, 180, 216, 0.15);
     }
-    .erp-title {
+    .erp-title-mod {
         font-size: 15px;
         font-weight: 700;
         color: #0077b6 !important;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
     }
-    .erp-value {
-        font-size: 24px;
-        font-weight: bold;
+    .erp-value-mod {
+        font-size: 26px;
+        font-weight: 800;
         color: #03045e !important;
     }
+
+    /* Contenedor de Login moderno y flotante */
     .login-container {
-        background: #f0fbfc;
-        backdrop-filter: blur(10px);
-        border: 2px solid #00b4d8;
-        border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 8px 32px 0 rgba(0, 180, 216, 0.2);
-        max-width: 600px;
-        margin: 50px auto;
-        color: #2b2b2b;
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 24px;
+        padding: 45px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        max-width: 500px;
+        margin: 60px auto;
     }
     .login-title {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 800;
         color: #03045e !important;
         text-align: center;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
     .login-subtitle {
-        font-size: 15px;
-        color: #0077b6 !important;
+        font-size: 14px;
+        color: #6c757d !important;
         text-align: center;
         margin-bottom: 30px;
     }
+
+    /* Adaptabilidad de inputs y botones */
     .stTextInput label, .stSelectbox label, .stDateInput label {
         color: #03045e !important;
         font-weight: 600 !important;
     }
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
-        border: 2px solid #00b4d8 !important;
-        border-radius: 8px !important;
-        color: #2b2b2b !important;
+        border: 1.5px solid #ced4da !important;
+        border-radius: 10px !important;
     }
     .stTextInput input {
         background-color: #ffffff !important;
-        color: #2b2b2b !important;
-        border: 2px solid #00b4d8 !important;
-        border-radius: 8px !important;
+        border: 1.5px solid #ced4da !important;
+        border-radius: 10px !important;
     }
     div.stButton > button {
-        background-color: #00b4d8 !important;
+        background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         font-weight: 600 !important;
+        padding: 0.6rem 1rem;
+        box-shadow: 0 4px 12px rgba(0, 180, 216, 0.2);
+        transition: all 0.2s ease;
     }
     div.stButton > button:hover {
-        background-color: #0077b6 !important;
-        color: white !important;
+        opacity: 0.9;
+        box-shadow: 0 6px 15px rgba(0, 119, 182, 0.3);
+        transform: translateY(-1px);
+    }
+
+    /* Tablas adaptables y limpias */
+    [data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
     [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         font-size: 13px !important;
-        padding: 4px 6px !important;
+        padding: 8px 10px !important;
     }
     [data-testid="stDataFrame"] table tr th:first-child,
     [data-testid="stDataFrame"] table tr td:first-child {
@@ -415,7 +438,7 @@ if st.sidebar.button("Cerrar Sesión"):
     st.rerun()
 
 # ==========================================
-# 🗂️ 4. ENRUTADOR DE MÓDULOS
+# 🗂️ 4. ENRUTADOR DE MÓDULOS CON CSS GRID 2D Y FLEXBOX
 # ==========================================
 
 if st.session_state.modulo_actual == "Inicio":
@@ -423,63 +446,62 @@ if st.session_state.modulo_actual == "Inicio":
     st.write("Selecciona el módulo de gestión que deseas operar:")
     st.markdown("<br>", unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-            <div class="erp-card">
-                <div class="erp-title">💰 FINANZAS</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Presupuesto, Ventas & Desperdicio</div>
+    # Renderizado mediante Grid 2D adaptable (funciona perfecto en móviles, tablets y PCs)
+    st.markdown("""
+        <div class="grid-menu-container">
+            <div class="erp-card-modern">
+                <div>
+                    <div class="erp-title-mod">💰 FINANZAS</div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">Presupuesto, Ventas & Desperdicio</div>
+                </div>
             </div>
-        """, unsafe_allow_html=True)
-        if st.button("🚀 Ingresar a Finanzas", use_container_width=True):
+            <div class="erp-card-modern">
+                <div>
+                    <div class="erp-title-mod">📅 PLANILLA Y PERSONAL</div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">Base de datos, Vacaciones & Alertas</div>
+                </div>
+            </div>
+            <div class="erp-card-modern">
+                <div>
+                    <div class="erp-title-mod">🔮 PREVISIONES</div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">Proyecciones y metas de zona</div>
+                </div>
+            </div>
+            <div class="erp-card-modern">
+                <div>
+                    <div class="erp-title-mod">📦 INVENTARIOS</div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">Control de stock y pedidos</div>
+                </div>
+            </div>
+            <div class="erp-card-modern">
+                <div>
+                    <div class="erp-title-mod">📋 AUDITORÍA EOR</div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">Estándares operativos de calidad</div>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    col_b1, col_b2, col_b3, col_b4, col_b5 = st.columns(5)
+    with col_b1:
+        if st.button("🚀 Finanzas", use_container_width=True):
             st.session_state.modulo_actual = "Finanzas"
             st.rerun()
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        st.markdown("""
-            <div class="erp-card">
-                <div class="erp-title">📦 INVENTARIOS</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Control de stock y pedidos</div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("🚀 Ingresar a Inventarios", use_container_width=True):
-            st.session_state.modulo_actual = "Inventarios"
-            st.rerun()
-
-    with col2:
-        st.markdown("""
-            <div class="erp-card">
-                <div class="erp-title">📅 PLANILLA Y PERSONAL</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Base de datos, Vacaciones & Alertas</div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("🚀 Ingresar a Planilla", use_container_width=True):
+    with col_b2:
+        if st.button("🚀 Planilla", use_container_width=True):
             st.session_state.modulo_actual = "Planilla"
             st.rerun()
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        st.markdown("""
-            <div class="erp-card">
-                <div class="erp-title">📋 AUDITORÍA EOR</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Estándares operativos de calidad</div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("🚀 Ingresar a EOR", use_container_width=True):
-            st.session_state.modulo_actual = "EOR"
-            st.rerun()
-
-    with col3:
-        st.markdown("""
-            <div class="erp-card">
-                <div class="erp-title">🔮 PREVISIONES</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Proyecciones y metas de zona</div>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("🚀 Ingresar a Previsiones", use_container_width=True):
+    with col_b3:
+        if st.button("🚀 Previsiones", use_container_width=True):
             st.session_state.modulo_actual = "Previsiones"
+            st.rerun()
+    with col_b4:
+        if st.button("🚀 Inventarios", use_container_width=True):
+            st.session_state.modulo_actual = "Inventarios"
+            st.rerun()
+    with col_b5:
+        if st.button("🚀 EOR", use_container_width=True):
+            st.session_state.modulo_actual = "EOR"
             st.rerun()
 
 # ---> MÓDULO DE FINANZAS <---
@@ -519,7 +541,7 @@ elif st.session_state.modulo_actual == "Finanzas":
 
     if st.session_state.usuario_rol == "Master":
         tab_resumen, tab_presupuestos, tab_individual = st.tabs([
-            f"📋 Análisis Integral de Almacenes ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos & Venta {anio_pasado} ({mes_sel_nombre})", f"🔍 Registro Diario por Tienda ({mes_sel_nombre})"
+            f"📋 Análisis Integral ({mes_sel_nombre})", f"⚙️ Configurar Presupuestos ({mes_sel_nombre})", f"🔍 Registro Diario ({mes_sel_nombre})"
         ])
         
         with tab_resumen:
@@ -604,54 +626,54 @@ elif st.session_state.modulo_actual == "Finanzas":
             st.markdown(f"### 🌐 Indicadores Globales Zona 4 — {pct_meta_tiempo:.1f}% del mes")
             
             st.markdown(f"""
-                <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
-                    <div class="erp-title">🎯 PRESUPUESTO TOTAL ASIGNADO A LA ZONA (CONFIGURACIÓN)</div>
-                    <div class="erp-value">${presupuesto_total_zona:,.0f}</div>
-                    <div style="font-size: 12px; color: #0077b6; margin-top: 4px;">Suma de metas configuradas para todos los almacenes en {mes_sel_nombre} {anio_sel}</div>
+                <div class="erp-card-modern" style="max-width: 100%; margin-bottom: 20px; text-align: left; align-items: flex-start;">
+                    <div class="erp-title-mod">🎯 PRESUPUESTO TOTAL ASIGNADO A LA ZONA (CONFIGURACIÓN)</div>
+                    <div class="erp-value-mod">${presupuesto_total_zona:,.0f}</div>
+                    <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">Suma de metas configuradas para todos los almacenes en {mes_sel_nombre} {anio_sel}</div>
                 </div>
             """, unsafe_allow_html=True)
 
             col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
             with col_k1:
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">💰 VENTA ACUMULADA RANGO</div>
-                        <div class="erp-value">${t_venta:,.0f}</div>
-                        <div style="font-size: 11px; color: #0077b6; margin-top: 4px;">Meta Proporcional: ${meta_fecha_zona:,.0f}</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">💰 VENTA RANGO</div>
+                        <div class="erp-value-mod" style="font-size: 20px;">${t_venta:,.0f}</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Meta: ${meta_fecha_zona:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k2:
                 color_cump_card = "#28a745" if t_cump_prop >= 100 else ("#ffc107" if t_cump_prop >= 85 else "#dc3545")
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">📈 CUMPLIMIENTO RANGO</div>
-                        <div class="erp-value" style="color: {color_cump_card};">{t_cump_prop:.2f}%</div>
-                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Cump. Mes Total: {t_cumplimiento:.2f}%</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">📈 CUMPLIMIENTO</div>
+                        <div class="erp-value-mod" style="color: {color_cump_card};">{t_cump_prop:.2f}%</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Mes Total: {t_cumplimiento:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k3:
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">🎫 TICKET PROMEDIO ZONA</div>
-                        <div class="erp-value">${t_ticket_zona:,.0f}</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">🎫 TICKET PROMEDIO</div>
+                        <div class="erp-value-mod" style="font-size: 20px;">${t_ticket_zona:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k4:
                 color_tarjeta_desp = "#28a745" if t_pct_desp_zona <= 10.0 else "#dc3545"
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">⚠️ % DESPERDICIO ZONA</div>
-                        <div class="erp-value" style="color: {color_tarjeta_desp};">{t_pct_desp_zona:.2f}%</div>
-                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Límite mes: 10.0%</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">⚠️ % DESPERDICIO</div>
+                        <div class="erp-value-mod" style="color: {color_tarjeta_desp};">{t_pct_desp_zona:.2f}%</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Límite: 10.0%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_k5:
                 color_crec_card = "#28a745" if crecimiento_zona >= 0 else "#dc3545"
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">📊 CRECIMIENTO RANGO</div>
-                        <div class="erp-value" style="color: {color_crec_card};">{crecimiento_zona:.2f}%</div>
-                        <div style="font-size: 11px; color: #555; margin-top: 4px;">vs {anio_pasado} en rango</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">📊 CRECIMIENTO</div>
+                        <div class="erp-value-mod" style="color: {color_crec_card};">{crecimiento_zona:.2f}%</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">vs {anio_pasado}</div>
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -815,57 +837,57 @@ elif st.session_state.modulo_actual == "Finanzas":
             ticket_tienda = (venta_tienda / trans_tienda) if trans_tienda > 0 else 0.0
             pct_desp_tienda = (desp_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
-            st.markdown(f"### 📍 Indicadores Exclusivos de: {almacen_sel} (Corte D-1 al Día {dia_corte_ind})")
+            st.markdown(f"### 📍 Indicadores de: {almacen_sel} (Corte D-1 al Día {dia_corte_ind})")
             
             st.markdown(f"""
-                <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
-                    <div class="erp-title">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
-                    <div class="erp-value">${presupuesto_tienda:,.0f}</div>
-                    <div style="font-size: 12px; color: #0077b6; margin-top: 4px;">Meta total mensual configurada para {almacen_sel}</div>
+                <div class="erp-card-modern" style="max-width: 100%; margin-bottom: 20px; text-align: left; align-items: flex-start;">
+                    <div class="erp-title-mod">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
+                    <div class="erp-value-mod">${presupuesto_tienda:,.0f}</div>
+                    <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">Meta total mensual configurada para {almacen_sel}</div>
                 </div>
             """, unsafe_allow_html=True)
 
             col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
             with col_t1:
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">💰 VENTA ACUMULADA</div>
-                        <div class="erp-value">${venta_tienda:,.0f}</div>
-                        <div style="font-size: 11px; color: #0077b6; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">💰 VENTA</div>
+                        <div class="erp-value-mod" style="font-size: 20px;">${venta_tienda:,.0f}</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Meta: ${meta_presup_tienda_fecha:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t2:
                 color_cump_card_tienda = "#28a745" if cump_prop_tienda >= 100 else ("#ffc107" if cump_prop_tienda >= 85 else "#dc3545")
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
-                        <div class="erp-value" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
-                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Cump. Mes Total: {cump_tienda:.2f}%</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">📈 CUMPLIMIENTO</div>
+                        <div class="erp-value-mod" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Mes Total: {cump_tienda:.2f}%</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t3:
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">🎫 TICKET PROMEDIO</div>
-                        <div class="erp-value">${ticket_tienda:,.0f}</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">🎫 TICKET</div>
+                        <div class="erp-value-mod" style="font-size: 20px;">${ticket_tienda:,.0f}</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t4:
                 color_desp_card = "#28a745" if pct_desp_tienda <= 10.0 else "#dc3545"
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">⚠️ % DESPERDICIO</div>
-                        <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
-                        <div style="font-size: 11px; color: #555; margin-top: 4px;">Acum: {desp_tienda:,} unid</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">⚠️ % DESPERDICIO</div>
+                        <div class="erp-value-mod" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Acum: {desp_tienda:,} u.</div>
                     </div>
                 """, unsafe_allow_html=True)
             with col_t5:
                 color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
                 st.markdown(f"""
-                    <div class="erp-card">
-                        <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
-                        <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
-                        <div style="font-size: 11px; color: #555; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
+                    <div class="erp-card-modern">
+                        <div class="erp-title-mod">📊 CRECIMIENTO</div>
+                        <div class="erp-value-mod" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
+                        <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">vs {anio_pasado}</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -880,14 +902,14 @@ elif st.session_state.modulo_actual == "Finanzas":
             
             col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
             with col_btn_save:
-                if st.button("Guardar Registro Diario de esta Tienda"):
+                if st.button("Guardar Registro Diario"):
                     df_diario_edit["Ticket Promedio ($)"] = df_diario_edit.apply(
                         lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
                         axis=1
                     )
                     df_mes_activo.loc[df_mes_activo["Almacén"] == almacen_sel] = df_diario_edit
                     guardar_mes(anio_sel, mes_num, df_mes_activo)
-                    st.success(f"¡Registros de {almacen_sel} para {mes_sel_nombre} guardados de forma permanente!")
+                    st.success(f"¡Registros de {almacen_sel} guardados de forma permanente!")
                     st.rerun()
 
             with col_btn_dl:
@@ -896,14 +918,14 @@ elif st.session_state.modulo_actual == "Finanzas":
                     df_mes_activo.to_excel(writer, index=False, sheet_name=f'Registros_{mes_sel_nombre}')
                 excel_tienda_bytes = output_tienda.getvalue()
                 st.download_button(
-                    label=f"📥 Descargar Plantilla Registros",
+                    label=f"📥 Descargar Plantilla",
                     data=excel_tienda_bytes,
                     file_name=f"Plantilla_Registros_{mes_sel_nombre}_{anio_sel}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
             with col_btn_ul:
-                arch_reg = st.file_uploader("Subir Registros Diarios en Excel", type=["xlsx"], key="upload_reg_diario")
+                arch_reg = st.file_uploader("Subir Registros Excel", type=["xlsx"], key="upload_reg_diario")
                 if arch_reg:
                     try:
                         df_reg_excel = pd.read_excel(arch_reg)
@@ -913,10 +935,10 @@ elif st.session_state.modulo_actual == "Finanzas":
                                 axis=1
                             )
                             guardar_mes(anio_sel, mes_num, df_reg_excel)
-                            st.success("¡Registros diarios cargados y actualizados correctamente en el sistema!")
+                            st.success("¡Registros diarios cargados correctamente!")
                             st.rerun()
                         else:
-                            st.error("El archivo Excel no tiene las columnas obligatorias ('Fecha y Día', 'Almacén').")
+                            st.error("El archivo Excel no tiene las columnas obligatorias.")
                     except Exception as e:
                         st.error(f"Error al leer el archivo: {e}")
 
@@ -954,54 +976,54 @@ elif st.session_state.modulo_actual == "Finanzas":
         pct_desp_tienda = (d_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
         st.markdown(f"""
-            <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
-                <div class="erp-title">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
-                <div class="erp-value">${presupuesto_tienda:,.0f}</div>
-                <div style="font-size: 12px; color: #0077b6; margin-top: 4px;">Meta total mensual configurada para {tienda_elegida}</div>
+            <div class="erp-card-modern" style="max-width: 100%; margin-bottom: 20px; text-align: left; align-items: flex-start;">
+                <div class="erp-title-mod">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
+                <div class="erp-value-mod">${presupuesto_tienda:,.0f}</div>
+                <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">Meta total mensual configurada para {tienda_elegida}</div>
             </div>
         """, unsafe_allow_html=True)
 
         col_ad1, col_ad2, col_ad3, col_ad4, col_ad5 = st.columns(5)
         with col_ad1:
             st.markdown(f"""
-                <div class="erp-card">
-                    <div class="erp-title">💰 VENTA ACUMULADA</div>
-                    <div class="erp-value">${v_tienda:,.0f}</div>
-                    <div style="font-size: 11px; color: #0077b6; margin-top: 4px;">Meta a la Fecha: ${meta_presup_tienda_fecha:,.0f}</div>
+                <div class="erp-card-modern">
+                    <div class="erp-title-mod">💰 VENTA</div>
+                    <div class="erp-value-mod" style="font-size: 20px;">${v_tienda:,.0f}</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Meta: ${meta_presup_tienda_fecha:,.0f}</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad2:
             color_cump_card_tienda = "#28a745" if cump_prop_tienda >= 100 else ("#ffc107" if cump_prop_tienda >= 85 else "#dc3545")
             st.markdown(f"""
-                <div class="erp-card">
-                    <div class="erp-title">📈 CUMPLIMIENTO A LA FECHA</div>
-                    <div class="erp-value" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">Cump. Mes Total: {c_tienda:.2f}%</div>
+                <div class="erp-card-modern">
+                    <div class="erp-title-mod">📈 CUMPLIMIENTO</div>
+                    <div class="erp-value-mod" style="color: {color_cump_card_tienda};">{cump_prop_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Mes Total: {c_tienda:.2f}%</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad3:
             st.markdown(f"""
-                <div class="erp-card">
-                    <div class="erp-title">🎫 TICKET PROMEDIO</div>
-                    <div class="erp-value">${tk_tienda:,.0f}</div>
+                <div class="erp-card-modern">
+                    <div class="erp-title-mod">🎫 TICKET</div>
+                    <div class="erp-value-mod" style="font-size: 20px;">${tk_tienda:,.0f}</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad4:
             color_desp_card = "#28a745" if pct_desp_tienda <= 10.0 else "#dc3545"
             st.markdown(f"""
-                <div class="erp-card">
-                    <div class="erp-title">⚠️ % DESPERDICIO</div>
-                    <div class="erp-value" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">Acum: {d_tienda:,} unid</div>
+                <div class="erp-card-modern">
+                    <div class="erp-title-mod">⚠️ % DESPERDICIO</div>
+                    <div class="erp-value-mod" style="color: {color_desp_card};">{pct_desp_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Acum: {d_tienda:,} u.</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_ad5:
             color_cv_card = "#28a745" if crecimiento_tienda >= 0 else "#dc3545"
             st.markdown(f"""
-                <div class="erp-card">
-                    <div class="erp-title">📊 CRECIMIENTO A LA FECHA</div>
-                    <div class="erp-value" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
-                    <div style="font-size: 11px; color: #555; margin-top: 4px;">vs {anio_pasado} a la fecha</div>
+                <div class="erp-card-modern">
+                    <div class="erp-title-mod">📊 CRECIMIENTO</div>
+                    <div class="erp-value-mod" style="color: {color_cv_card};">{crecimiento_tienda:.2f}%</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">vs {anio_pasado}</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -1021,7 +1043,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             )
             df_mes_activo.loc[df_mes_activo["Almacén"] == tienda_elegida] = df_diario_admin_edit
             guardar_mes(anio_sel, mes_num, df_mes_activo)
-            st.success("¡Reporte diario guardado de forma permanente en el sistema!")
+            st.success("¡Reporte diario guardado de forma permanente!")
             st.rerun()
 
 # ---> MÓDULO DE PLANILLA Y PERSONAL <---
@@ -1068,7 +1090,7 @@ elif st.session_state.modulo_actual == "Planilla":
         st.markdown("---")
 
     if st.session_state.usuario_rol == "Master":
-        tab_personal_master, tab_crear_master = st.tabs(["👥 Directorio, Vacaciones & Personal (Zona 4)", "➕ Crear / Eliminar Personal (Espacio Master)"])
+        tab_personal_master, tab_crear_master = st.tabs(["👥 Directorio & Vacaciones", "➕ Crear / Eliminar Personal"])
         
         with tab_personal_master:
             st.subheader("Directorio General, Fechas de Ingreso y Cálculo de Vacaciones Causadas")
@@ -1082,7 +1104,6 @@ elif st.session_state.modulo_actual == "Planilla":
                 c_rol = st.selectbox("Rol en la plataforma:", ["Auxiliar", "Administrador / Líder"])
                 c_tienda = st.multiselect("Tienda(s) Asignada(s):", st.session_state.lista_almacenes_base)
                 
-                # Rango ampliado de 1950 a 2050 para Fecha de Ingreso y Cumpleaños
                 min_rango_fecha = datetime(1950, 1, 1).date()
                 max_rango_fecha = datetime(2050, 12, 31).date()
                 
@@ -1122,8 +1143,8 @@ elif st.session_state.modulo_actual == "Planilla":
                 st.success("Colaborador eliminado con éxito.")
                 st.rerun()
     else:
-        st.subheader(f"👥 Personal Asignado a tus Tiendas (Incluye Vacaciones Causadas)")
-        st.write("Aquí puedes consultar la información y vigencias de carnets, exámenes y vacaciones de tu equipo:")
+        st.subheader(f"👥 Personal Asignado a tus Tiendas")
+        st.write("Información y vigencias de carnets, exámenes y vacaciones de tu equipo:")
         st.dataframe(df_personal_vistas, use_container_width=True, hide_index=True)
 
 # ---> MÓDULO DE AUDITORÍA EOR <---
@@ -1132,7 +1153,7 @@ elif st.session_state.modulo_actual == "EOR":
     st.write(f"Realiza la auditoría oficial sincronizada directamente con el archivo Excel maestro (**{EXCEL_EOR_MAESTRO}**):")
 
     if not os.path.exists(EXCEL_EOR_MAESTRO):
-        st.error(f"⚠️ No se encontró el archivo maestro '{EXCEL_EOR_MAESTRO}' en el directorio. Asegúrate de colocarlo en la misma carpeta del proyecto.")
+        st.error(f"⚠️ No se encontró el archivo maestro '{EXCEL_EOR_MAESTRO}' en el directorio.")
     else:
         wb_maestro = openpyxl.load_workbook(EXCEL_EOR_MAESTRO, data_only=True)
         sheet_rev = wb_maestro[' Revisión de operaciones']
@@ -1208,7 +1229,7 @@ elif st.session_state.modulo_actual == "EOR":
                 with c_val:
                     calif = st.selectbox("Cumplimiento:", ["Sí", "No", "N/A"], key=f"eor_val_{idx}")
                 with c_obs:
-                    obs = st.text_input("Observación / Justificación:", key=f"eor_obs_{idx}", placeholder="Escribe aquí el motivo o hallazgo...")
+                    obs = st.text_input("Observación / Justificación:", key=f"eor_obs_{idx}", placeholder="Observación o hallazgo...")
                 st.markdown("")
                 
                 respuestas_usuario.append({
