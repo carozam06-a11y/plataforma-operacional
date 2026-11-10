@@ -174,10 +174,12 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 # ☁️ CONEXIÓN ROBUSTA CON GOOGLE SHEETS
 # ==========================================
 def conectar_google_sheets():
-    # Convertimos los secretos a un diccionario modificable
     creds_dict = dict(st.secrets["gcp_service_account"])
     
-    # Aseguramos que tenga el token_uri que exige Google
+    # Corrige automáticamente el formato de los saltos de línea de la clave privada
+    if "private_key" in creds_dict:
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+        
     if "token_uri" not in creds_dict:
         creds_dict["token_uri"] = "https://oauth2.googleapis.com/token"
         
