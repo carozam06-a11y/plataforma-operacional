@@ -177,53 +177,47 @@ if not os.path.exists(DIR_DATOS):
 
 EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
+# ==========================================
+# ☁️ BASE DE DATOS CENTRALIZADA EN GOOGLE SHEETS
+# ==========================================
+
 def obtener_o_crear_personal():
-    ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
-    if os.path.exists(ruta_csv):
-        df = pd.read_csv(ruta_csv)
-        if "Fecha Ingreso" not in df.columns:
-            df["Fecha Ingreso"] = "2025-01-01"
-            df.to_csv(ruta_csv, index=False)
-        return df
-    else:
-        df_inicial = pd.DataFrame([
-            {
-                "Cedula": "101010101",
-                "Nombre Completo": "Camilo Torres",
-                "Rol": "Administrador / Líder",
-                "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
-                "Fecha Ingreso": "2024-01-15",
-                "Cumpleanos": "1995-05-12",
-                "Vencimiento Examen Medico": "2026-06-01",
-                "Vencimiento Manipulacion Alimentos": "2026-06-01"
-            },
-            {
-                "Cedula": "102020202",
-                "Nombre Completo": "Karen Moreno",
-                "Rol": "Administrador / Líder",
-                "Tiendas Asignadas": "PV 106 - CL 140 12 51 BQ A",
-                "Fecha Ingreso": "2024-06-10",
-                "Cumpleanos": "1998-08-20",
-                "Vencimiento Examen Medico": "2026-05-25",
-                "Vencimiento Manipulacion Alimentos": "2026-05-25"
-            },
-            {
-                "Cedula": "9001001",
-                "Nombre Completo": "Maria Andrea Cortes",
-                "Rol": "Auxiliar",
-                "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
-                "Fecha Ingreso": "2025-03-01",
-                "Cumpleanos": "2000-03-15",
-                "Vencimiento Examen Medico": "2026-05-28",
-                "Vencimiento Manipulacion Alimentos": "2026-07-10"
-            }
-        ])
-        df_inicial.to_csv(ruta_csv, index=False)
-        return df_inicial
+    try:
+        sheet = conectar_google_sheets()
+        # Obtenemos todos los registros de la hoja de Google Sheets
+        registros = sheet.get_all_records()
+        if not registros:
+            # Si la hoja está vacía, creamos los datos iniciales por defecto
+            df_inicial = pd.DataFrame([
+                {
+                    "Cedula": "101010101",
+                    "Nombre Completo": "Camilo Torres",
+                    "Rol": "Administrador / Líder",
+                    "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                    "Fecha Ingreso": "2024-01-15",
+                    "Cumpleanos": "1995-05-12",
+                    "Vencimiento Examen Medico": "2026-06-01",
+                    "Vencimiento Manipulacion Alimentos": "2026-06-01"
+                }
+            ])
+            # Subimos los encabezados y datos iniciales a Google Sheets
+            sheet.update([df_inicial.columns.values.tolist()] + df_inicial.values.tolist())
+            return df_inicial
+        return pd.DataFrame(registros)
+    except Exception as e:
+        st.error(f"Error al conectar con Google Sheets: {e}")
+        # Si llega a fallar el internet, retorna una tabla vacía para que no se caiga la app
+        return pd.DataFrame(columns=["Cedula", "Nombre Completo", "Rol", "Tiendas Asignadas", "Fecha Ingreso", "Cumpleanos", "Vencimiento Examen Medico", "Vencimiento Manipulacion Alimentos"])
 
 def guardar_personal(df):
-    ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
-    df.to_csv(ruta_csv, index=False)
+    try:
+        sheet = conectar_google_sheets()
+        sheet.clear() # Limpia la hoja de cálculo
+        # Actualiza con la nueva información al instante para todos los equipos
+        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        st.success("¡Información guardada y sincronizada en la nube con éxito!")
+    except Exception as e:
+        st.error(f"Error al guardar en la nube: {e}")
 
 def calcular_vacaciones_causadas(fecha_ingreso_str):
     try:
