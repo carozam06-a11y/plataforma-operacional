@@ -147,7 +147,11 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 def obtener_o_crear_personal():
     ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
     if os.path.exists(ruta_csv):
-        return pd.read_csv(ruta_csv)
+        df = pd.read_csv(ruta_csv)
+        if "Fecha Ingreso" not in df.columns:
+            df["Fecha Ingreso"] = "2025-01-01"
+            df.to_csv(ruta_csv, index=False)
+        return df
     else:
         df_inicial = pd.DataFrame([
             {
@@ -155,6 +159,7 @@ def obtener_o_crear_personal():
                 "Nombre Completo": "Camilo Torres",
                 "Rol": "Administrador / Líder",
                 "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                "Fecha Ingreso": "2024-01-15",
                 "Cumpleanos": "1995-05-12",
                 "Vencimiento Examen Medico": "2026-06-01",
                 "Vencimiento Manipulacion Alimentos": "2026-06-01"
@@ -164,6 +169,7 @@ def obtener_o_crear_personal():
                 "Nombre Completo": "Karen Moreno",
                 "Rol": "Administrador / Líder",
                 "Tiendas Asignadas": "PV 106 - CL 140 12 51 BQ A",
+                "Fecha Ingreso": "2024-06-10",
                 "Cumpleanos": "1998-08-20",
                 "Vencimiento Examen Medico": "2026-05-25",
                 "Vencimiento Manipulacion Alimentos": "2026-05-25"
@@ -173,6 +179,7 @@ def obtener_o_crear_personal():
                 "Nombre Completo": "Maria Andrea Cortes",
                 "Rol": "Auxiliar",
                 "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                "Fecha Ingreso": "2025-03-01",
                 "Cumpleanos": "2000-03-15",
                 "Vencimiento Examen Medico": "2026-05-28",
                 "Vencimiento Manipulacion Alimentos": "2026-07-10"
@@ -184,6 +191,27 @@ def obtener_o_crear_personal():
 def guardar_personal(df):
     ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
     df.to_csv(ruta_csv, index=False)
+
+def calcular_vacaciones_causadas(fecha_ingreso_str):
+    try:
+        f_ingreso = datetime.strptime(str(fecha_ingreso_str).split(" ")[0], "%Y-%m-%d").date()
+        hoy = datetime.now().date()
+        if f_ingreso > hoy:
+            return "0.0 días (Aún no inicia)"
+        
+        # Diferencia en días totales desde el ingreso hasta hoy
+        dias_totales = (hoy - f_ingreso).days
+        
+        # 15 días hábiles de vacaciones por cada 365 días laborados (1.25 días por mes)
+        dias_vacaciones = (dias_totales / 365.25) * 15.0
+        
+        # Calcular años cumplidos y mes/año en curso
+        anos_cumplidos = dias_totales // 365
+        proximo_ano = anos_cumplidos + 1
+        
+        return f"{dias_vacaciones:.1f} días (Cursando año {proximo_ano})"
+    except:
+        return "N/A"
 
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
@@ -429,7 +457,7 @@ if st.session_state.modulo_actual == "Inicio":
         st.markdown("""
             <div class="erp-card">
                 <div class="erp-title">📅 PLANILLA Y PERSONAL</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Turnos, Base de datos & Alertas Médicas</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Base de datos, Vacaciones & Alertas</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a Planilla", use_container_width=True):
@@ -1007,6 +1035,9 @@ elif st.session_state.modulo_actual == "Planilla":
     
     df_personal = obtener_o_crear_personal()
     
+    # Agregar cálculo automático de vacaciones causadas en tiempo real para visualizar
+    df_personal["Vacaciones Causadas"] = df_personal["Fecha Ingreso"].apply(calcular_vacaciones_causadas)
+    
     hoy_date = datetime.now().date()
     limite_alerta = hoy_date + timedelta(days=10)
     
@@ -1044,10 +1075,10 @@ elif st.session_state.modulo_actual == "Planilla":
         st.markdown("---")
 
     if st.session_state.usuario_rol == "Master":
-        tab_personal_master, tab_crear_master = st.tabs(["👥 Directorio y Gestión de Personal (Zona 4)", "➕ Crear / Eliminar Personal (Espacio Master)"])
+        tab_personal_master, tab_crear_master = st.tabs(["👥 Directorio, Vacaciones & Personal (Zona 4)", "➕ Crear / Eliminar Personal (Espacio Master)"])
         
         with tab_personal_master:
-            st.subheader("Directorio General de Líderes, Admins y Auxiliares")
+            st.subheader("Directorio General, Fechas de Ingreso y Cálculo de Vacaciones Causadas")
             st.dataframe(df_personal, use_container_width=True, hide_index=True)
             
         with tab_crear_master:
@@ -1057,6 +1088,7 @@ elif st.session_state.modulo_actual == "Planilla":
                 c_nom = st.text_input("Nombre Completo:")
                 c_rol = st.selectbox("Rol en la plataforma:", ["Auxiliar", "Administrador / Líder"])
                 c_tienda = st.multiselect("Tienda(s) Asignada(s):", st.session_state.lista_almacenes_base)
+                c_ingreso = st.date_input("Fecha de Ingreso (Contrato):", value=datetime.now() - timedelta(days=365))
                 c_cumple = st.date_input("Fecha de Cumpleaños:", value=datetime(1995, 1, 1))
                 c_med = st.date_input("Vencimiento Examen Médico:", value=datetime.now() + timedelta(days=90))
                 c_mani = st.date_input("Vencimiento Curso Manipulación:", value=datetime.now() + timedelta(days=90))
@@ -1069,6 +1101,7 @@ elif st.session_state.modulo_actual == "Planilla":
                             "Nombre Completo": c_nom.strip(),
                             "Rol": c_rol,
                             "Tiendas Asignadas": ", ".join(c_tienda),
+                            "Fecha Ingreso": str(c_ingreso),
                             "Cumpleanos": str(c_cumple),
                             "Vencimiento Examen Medico": str(c_med),
                             "Vencimiento Manipulacion Alimentos": str(c_mani)
@@ -1090,8 +1123,8 @@ elif st.session_state.modulo_actual == "Planilla":
                 st.success("Colaborador eliminado con éxito.")
                 st.rerun()
     else:
-        st.subheader(f"👥 Personal Asignado a tus Tiendas")
-        st.write("Aquí puedes consultar la información y vigencias de carnets y exámenes de tu equipo:")
+        st.subheader(f"👥 Personal Asignado a tus Tiendas (Incluye Vacaciones Causadas)")
+        st.write("Aquí puedes consultar la información y vigencias de carnets, exámenes y vacaciones de tu equipo:")
         st.dataframe(df_personal_vistas, use_container_width=True, hide_index=True)
 
 # ---> MÓDULO DE AUDITORÍA EOR <---
