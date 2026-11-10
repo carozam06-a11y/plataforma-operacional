@@ -199,13 +199,8 @@ def calcular_vacaciones_causadas(fecha_ingreso_str):
         if f_ingreso > hoy:
             return "0.0 días (Aún no inicia)"
         
-        # Diferencia en días totales desde el ingreso hasta hoy
         dias_totales = (hoy - f_ingreso).days
-        
-        # 15 días hábiles de vacaciones por cada 365 días laborados (1.25 días por mes)
         dias_vacaciones = (dias_totales / 365.25) * 15.0
-        
-        # Calcular años cumplidos y mes/año en curso
         anos_cumplidos = dias_totales // 365
         proximo_ano = anos_cumplidos + 1
         
@@ -1034,8 +1029,6 @@ elif st.session_state.modulo_actual == "Planilla":
     st.title("📅 Módulo de Planilla y Base de Datos de Personal")
     
     df_personal = obtener_o_crear_personal()
-    
-    # Agregar cálculo automático de vacaciones causadas en tiempo real para visualizar
     df_personal["Vacaciones Causadas"] = df_personal["Fecha Ingreso"].apply(calcular_vacaciones_causadas)
     
     hoy_date = datetime.now().date()
@@ -1088,7 +1081,11 @@ elif st.session_state.modulo_actual == "Planilla":
                 c_nom = st.text_input("Nombre Completo:")
                 c_rol = st.selectbox("Rol en la plataforma:", ["Auxiliar", "Administrador / Líder"])
                 c_tienda = st.multiselect("Tienda(s) Asignada(s):", st.session_state.lista_almacenes_base)
-                c_ingreso = st.date_input("Fecha de Ingreso (Contrato):", value=datetime.now() - timedelta(days=365))
+                
+                # Selector de fecha de ingreso ampliado 45 años atrás
+                min_fecha_ingreso = datetime.now().date() - timedelta(days=45*365)
+                c_ingreso = st.date_input("Fecha de Ingreso (Contrato):", value=datetime.now().date() - timedelta(days=365), min_value=min_fecha_ingreso, max_value=datetime.now().date())
+                
                 c_cumple = st.date_input("Fecha de Cumpleaños:", value=datetime(1995, 1, 1))
                 c_med = st.date_input("Vencimiento Examen Médico:", value=datetime.now() + timedelta(days=90))
                 c_mani = st.date_input("Vencimiento Curso Manipulación:", value=datetime.now() + timedelta(days=90))
