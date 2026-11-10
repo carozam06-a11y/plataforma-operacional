@@ -144,13 +144,11 @@ if not os.path.exists(DIR_DATOS):
 
 EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
-# Base de datos de Personal (Admin, Líderes y Auxiliares)
 def obtener_o_crear_personal():
     ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
     if os.path.exists(ruta_csv):
         return pd.read_csv(ruta_csv)
     else:
-        # Personal inicial por defecto (Admin/Líderes y algunos auxiliares de ejemplo)
         df_inicial = pd.DataFrame([
             {
                 "Cedula": "101010101",
@@ -176,7 +174,7 @@ def obtener_o_crear_personal():
                 "Rol": "Auxiliar",
                 "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
                 "Cumpleanos": "2000-03-15",
-                "Vencimiento Examen Medico": "2026-05-28", # Cercano a vencer para probar alerta
+                "Vencimiento Examen Medico": "2026-05-28",
                 "Vencimiento Manipulacion Alimentos": "2026-07-10"
             }
         ])
@@ -319,12 +317,10 @@ if "autenticado" not in st.session_state:
     st.session_state.tiendas_asignadas = []
 
 def verificar_credenciales_dinamicas(usuario_cedula, password):
-    # Validar Master
     if usuario_cedula == CEDULA_MASTER and password == CLAVE_MASTER:
         return "Master", "Carolina Zamora", st.session_state.lista_almacenes_base
     
-    # Validar contra la base de datos de personal
-df_personal = obtener_o_crear_personal()
+    df_personal = obtener_o_crear_personal()
     usuario_encontrado = df_personal[df_personal["Cedula"].astype(str) == str(usuario_cedula)]
     
     if not usuario_encontrado.empty:
@@ -333,7 +329,6 @@ df_personal = obtener_o_crear_personal()
         tiendas_str = str(usuario_encontrado.iloc[0]["Tiendas Asignadas"])
         tiendas_lista = [t.strip() for t in tiendas_str.split(",")]
         
-        # Contraseña esperada: Nombre y un asterisco (ej. Camilo*)
         primer_nombre = nombre_completo.split(" ")[0]
         clave_esperada = f"{primer_nombre}*"
         
@@ -484,7 +479,6 @@ elif st.session_state.modulo_actual == "Finanzas":
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
     df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
 
-    # Restringir lista de almacenes para administradores según sus tiendas asignadas
     if st.session_state.usuario_rol == "Master":
         almacenes_disponibles = st.session_state.lista_almacenes_base
     else:
@@ -904,7 +898,6 @@ elif st.session_state.modulo_actual == "Finanzas":
                         st.error(f"Error al leer el archivo: {e}")
 
     else:
-        # VISTA PARA LÍDER / ADMINISTRADOR DE TIENDAS ASIGNADAS EN FINANZAS
         dia_corte_admin = dia_corte_default
         def filtrar_por_rango(df, inicio, fin):
             df_copia = df.copy()
@@ -1014,18 +1007,15 @@ elif st.session_state.modulo_actual == "Planilla":
     
     df_personal = obtener_o_crear_personal()
     
-    # 🚨 SISTEMA DE ALERTAS (10 días antes de vencer exámenes médicos o manipulación)
     hoy_date = datetime.now().date()
     limite_alerta = hoy_date + timedelta(days=10)
     
-    # Filtrar según rol
     if st.session_state.usuario_rol != "Master":
         tiendas_lider = st.session_state.tiendas_asignadas
         df_personal_vistas = df_personal[df_personal["Tiendas Asignadas"].apply(lambda x: any(t in str(x) for t in tiendas_lider))]
     else:
         df_personal_vistas = df_personal.copy()
 
-    # Comprobar alertas en el personal visible
     alertas_encontradas = []
     for idx, row in df_personal_vistas.iterrows():
         nombre_colab = row["Nombre Completo"]
@@ -1100,7 +1090,6 @@ elif st.session_state.modulo_actual == "Planilla":
                 st.success("Colaborador eliminado con éxito.")
                 st.rerun()
     else:
-        # VISTA PARA LÍDER / ADMINISTRADOR
         st.subheader(f"👥 Personal Asignado a tus Tiendas")
         st.write("Aquí puedes consultar la información y vigencias de carnets y exámenes de tu equipo:")
         st.dataframe(df_personal_vistas, use_container_width=True, hide_index=True)
@@ -1157,7 +1146,6 @@ elif st.session_state.modulo_actual == "EOR":
                     "Pregunta": desc_str
                 })
 
-        # Filtrar tiendas permitidas para auditoría
         if st.session_state.usuario_rol == "Master":
             tiendas_auditables = st.session_state.lista_almacenes_base
         else:
