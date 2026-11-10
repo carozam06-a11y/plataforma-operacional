@@ -176,9 +176,11 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 def conectar_google_sheets():
     creds_dict = dict(st.secrets["gcp_service_account"])
     
-    # Corrige automáticamente el formato de los saltos de línea de la clave privada
+    # Limpieza profunda y reparación de los saltos de línea de la clave privada
     if "private_key" in creds_dict:
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+        pk = str(creds_dict["private_key"])
+        pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
+        creds_dict["private_key"] = pk.strip()
         
     if "token_uri" not in creds_dict:
         creds_dict["token_uri"] = "https://oauth2.googleapis.com/token"
