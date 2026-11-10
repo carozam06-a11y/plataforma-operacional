@@ -178,15 +178,16 @@ def conectar_google_sheets():
     
     if "private_key" in creds_dict:
         pk = str(creds_dict["private_key"])
-        # Reemplazamos saltos de línea escapados y limpiamos caracteres erróneos
-        pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
         
-        # Aseguramos el formato estándar PEM de la llave privada
-        if not pk.startswith("-----BEGIN PRIVATE KEY-----"):
-            pk = "-----BEGIN PRIVATE KEY-----\n" + pk.strip()
-        if not pk.endswith("-----END PRIVATE KEY-----"):
-            pk = pk.strip() + "\n-----END PRIVATE KEY-----"
+        # Si por error se copió texto extra con puntos o comillas al inicio/fin, 
+        # extraemos limpiamente solo la estructura de la llave privada real:
+        if "BEGIN PRIVATE KEY" in pk:
+            inicio = pk.find("-----BEGIN PRIVATE KEY-----")
+            fin = pk.find("-----END PRIVATE KEY-----") + len("-----END PRIVATE KEY-----")
+            pk = pk[inicio:fin]
             
+        # Reemplazamos los saltos de línea de texto por saltos reales
+        pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
         creds_dict["private_key"] = pk
         
     if "token_uri" not in creds_dict:
