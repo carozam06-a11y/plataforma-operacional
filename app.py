@@ -6,7 +6,17 @@ from io import BytesIO
 import os
 import openpyxl
 from openpyxl.cell.cell import MergedCell
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
+# Conexión centralizada con Google Sheets en la nube
+def conectar_google_sheets():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.auth.com/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("Plataforma_Operacional_Zona4_Master").sheet1
+    return sheet
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
