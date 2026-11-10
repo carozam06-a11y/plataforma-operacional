@@ -14,18 +14,13 @@ st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="
 # ==========================================
 st.markdown("""
     <style>
-    /* Fondo general blanco y limpio para toda la aplicación */
     .stApp {
         background-color: #ffffff;
         color: #2b2b2b;
     }
-
-    /* Forzar textos generales a gris oscuro/negro para legibilidad en fondo blanco */
     h1, h2, h3, h4, h5, h6, p, span, label {
         color: #2b2b2b !important;
     }
-
-    /* Tarjetas ERP unificadas con altura uniforme para mantener simetría */
     .erp-card {
         background: #f0fbfc;
         backdrop-filter: blur(10px);
@@ -58,8 +53,6 @@ st.markdown("""
         font-weight: bold;
         color: #03045e !important;
     }
-
-    /* Contenedor de Login Estilizado */
     .login-container {
         background: #f0fbfc;
         backdrop-filter: blur(10px);
@@ -71,7 +64,6 @@ st.markdown("""
         margin: 50px auto;
         color: #2b2b2b;
     }
-    
     .login-title {
         font-size: 28px;
         font-weight: 800;
@@ -79,44 +71,28 @@ st.markdown("""
         text-align: center;
         margin-bottom: 10px;
     }
-    
     .login-subtitle {
         font-size: 15px;
         color: #0077b6 !important;
         text-align: center;
         margin-bottom: 30px;
     }
-
-    /* Etiquetas de inputs y selectores de Streamlit */
     .stTextInput label, .stSelectbox label, .stDateInput label {
         color: #03045e !important;
         font-weight: 600 !important;
     }
-
-    /* Estilo robusto para forzar bordes cian en todos los selectores / dropdowns de Streamlit */
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         border: 2px solid #00b4d8 !important;
         border-radius: 8px !important;
         color: #2b2b2b !important;
     }
-    div[data-baseweb="select"] > div:hover {
-        border-color: #0077b6 !important;
-    }
-
-    /* Estilo para los inputs de texto */
     .stTextInput input {
         background-color: #ffffff !important;
         color: #2b2b2b !important;
         border: 2px solid #00b4d8 !important;
         border-radius: 8px !important;
     }
-    .stTextInput input:focus {
-        border-color: #0077b6 !important;
-        box-shadow: 0 0 8px rgba(0, 180, 216, 0.4) !important;
-    }
-
-    /* Botones con estilo cian */
     div.stButton > button {
         background-color: #00b4d8 !important;
         color: white !important;
@@ -128,8 +104,6 @@ st.markdown("""
         background-color: #0077b6 !important;
         color: white !important;
     }
-
-    /* 📊 Compactar tablas y ocultar por completo la primera columna de números (índice) */
     [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         font-size: 13px !important;
         padding: 4px 6px !important;
@@ -146,19 +120,6 @@ st.markdown("""
 # ==========================================
 CEDULA_MASTER = "1032463775"      
 CLAVE_MASTER = "Carolina2026"  
-
-if "db_admins" not in st.session_state:
-    st.session_state.db_admins = {
-        "CEDULA_ADMIN_1": {"nombre": "Camilo", "tienda": "PV 102 - CR 12 89 33 LC 1"},
-        "CEDULA_ADMIN_2": {"nombre": "Karen", "tienda": "PV 106 - CL 140 12 51 BQ A"},
-        "CEDULA_ADMIN_3": {"nombre": "Esteban", "tienda": "PV 136 - EXITO COUNTRY CL 134"},
-        "CEDULA_ADMIN_4": {"nombre": "Jennifer", "tienda": "PV 141 - EDS TERPEL AV 13 125"},
-        "CEDULA_ADMIN_5": {"nombre": "Carolina", "tienda": "PV 180 - CC UNICENTRO LC2-158"},
-        "CEDULA_ADMIN_6": {"nombre": "Danna", "tienda": "PV 225 - EDIF EPSON CL 100"},
-        "CEDULA_ADMIN_7": {"nombre": "Everley", "tienda": "PV 226 - EDIF TELEPORT CL 113"},
-        "CEDULA_ADMIN_8": {"nombre": "Julian", "tienda": "PV 244 - EDIF WORLD TRADE CENT"},
-        "CEDULA_ADMIN_9": {"nombre": "KarenN", "tienda": "PV 249 - EDIF FLORMORADO"},
-    }
 
 if "lista_almacenes_base" not in st.session_state:
     st.session_state.lista_almacenes_base = [
@@ -183,6 +144,49 @@ if not os.path.exists(DIR_DATOS):
 
 EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
+# Base de datos de Personal (Admin, Líderes y Auxiliares)
+def obtener_o_crear_personal():
+    ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
+    if os.path.exists(ruta_csv):
+        return pd.read_csv(ruta_csv)
+    else:
+        # Personal inicial por defecto (Admin/Líderes y algunos auxiliares de ejemplo)
+        df_inicial = pd.DataFrame([
+            {
+                "Cedula": "101010101",
+                "Nombre Completo": "Camilo Torres",
+                "Rol": "Administrador / Líder",
+                "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                "Cumpleanos": "1995-05-12",
+                "Vencimiento Examen Medico": "2026-06-01",
+                "Vencimiento Manipulacion Alimentos": "2026-06-01"
+            },
+            {
+                "Cedula": "102020202",
+                "Nombre Completo": "Karen Moreno",
+                "Rol": "Administrador / Líder",
+                "Tiendas Asignadas": "PV 106 - CL 140 12 51 BQ A",
+                "Cumpleanos": "1998-08-20",
+                "Vencimiento Examen Medico": "2026-05-25",
+                "Vencimiento Manipulacion Alimentos": "2026-05-25"
+            },
+            {
+                "Cedula": "9001001",
+                "Nombre Completo": "Maria Andrea Cortes",
+                "Rol": "Auxiliar",
+                "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                "Cumpleanos": "2000-03-15",
+                "Vencimiento Examen Medico": "2026-05-28", # Cercano a vencer para probar alerta
+                "Vencimiento Manipulacion Alimentos": "2026-07-10"
+            }
+        ])
+        df_inicial.to_csv(ruta_csv, index=False)
+        return df_inicial
+
+def guardar_personal(df):
+    ruta_csv = os.path.join(DIR_DATOS, "personal_zona.csv")
+    df.to_csv(ruta_csv, index=False)
+
 def obtener_o_crear_presupuesto(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
     ruta_csv = os.path.join(DIR_DATOS, f"presupuesto_{clave_mes}.csv")
@@ -197,7 +201,6 @@ def obtener_o_crear_presupuesto(anio, mes_num):
             else:
                 df_existente[col_venta_pasada] = 0.0
         
-        # Auto-sincronizar nuevas tiendas añadidas al código
         almacenes_actuales = df_existente["Almacén"].tolist()
         nuevos_almacenes = [tienda for tienda in st.session_state.lista_almacenes_base if tienda not in almacenes_actuales]
         if nuevos_almacenes:
@@ -291,63 +294,79 @@ def escribir_celda_segura(sheet, coordenada, valor):
     col_letra = ''.join([c for c in coordenada if c.isalpha()])
     row_num = int(''.join([c for c in coordenada if c.isdigit()]))
     col_num = openpyxl.utils.column_index_from_string(col_letra)
-    
     for rango in list(sheet.merged_cells.ranges):
         if row_num >= rango.min_row and row_num <= rango.max_row and col_num >= rango.min_col and col_num <= rango.max_col:
             sheet.unmerge_cells(str(rango))
-            
     sheet.cell(row=row_num, column=col_num, value=valor)
 
 def escribir_celda_por_indices(sheet, row, col, valor):
     for rango in list(sheet.merged_cells.ranges):
         if row >= rango.min_row and row <= rango.max_row and col >= rango.min_col and col <= rango.max_col:
             sheet.unmerge_cells(str(rango))
-            
     sheet.cell(row=row, column=col, value=valor)
 
 if "modulo_actual" not in st.session_state:
     st.session_state.modulo_actual = "Inicio"
 
 # ==========================================
-# 🔐 2. SISTEMA DE LOGIN 
+# 🔐 2. SISTEMA DE LOGIN DINÁMICO
 # ==========================================
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.usuario_rol = None
     st.session_state.cedula_actual = None
+    st.session_state.nombre_usuario = None
+    st.session_state.tiendas_asignadas = []
 
-def verificar_credenciales(usuario, password):
-    if usuario == CEDULA_MASTER and password == CLAVE_MASTER:
-        return "Master", None
-    elif usuario in st.session_state.db_admins:
-        nombre_admin = st.session_state.db_admins[usuario]["nombre"]
-        if password == f"{nombre_admin}*":
-            return "Administrador", usuario
-    return None, None
+def verificar_credenciales_dinamicas(usuario_cedula, password):
+    # Validar Master
+    if usuario_cedula == CEDULA_MASTER and password == CLAVE_MASTER:
+        return "Master", "Carolina Zamora", st.session_state.lista_almacenes_base
+    
+    # Validar contra la base de datos de personal
+df_personal = obtener_o_crear_personal()
+    usuario_encontrado = df_personal[df_personal["Cedula"].astype(str) == str(usuario_cedula)]
+    
+    if not usuario_encontrado.empty:
+        nombre_completo = usuario_encontrado.iloc[0]["Nombre Completo"]
+        rol = usuario_encontrado.iloc[0]["Rol"]
+        tiendas_str = str(usuario_encontrado.iloc[0]["Tiendas Asignadas"])
+        tiendas_lista = [t.strip() for t in tiendas_str.split(",")]
+        
+        # Contraseña esperada: Nombre y un asterisco (ej. Camilo*)
+        primer_nombre = nombre_completo.split(" ")[0]
+        clave_esperada = f"{primer_nombre}*"
+        
+        if password == clave_esperada and ("Administrador" in rol or "Líder" in rol):
+            return "Administrador", nombre_completo, tiendas_lista
+            
+    return None, None, []
 
 if not st.session_state.autenticado:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("""
         <div class="login-container">
             <div class="login-title">🍩 Plataforma Operacional Zona 4</div>
-            <div class="login-subtitle">🔒 Acceso Seguro — Ingresa tus credenciales para continuar</div>
+            <div class="login-subtitle">🔒 Acceso Seguro — Cédula y Contraseña (Nombre*)</div>
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
         usuario_input = st.text_input("Usuario (Número de Cédula):")
-        password_input = st.text_input("Contraseña:", type="password")
+        password_input = st.text_input("Contraseña (Ej. Camilo*):", type="password")
         st.markdown("<br>", unsafe_allow_html=True)
         submitted = st.form_submit_button("Ingresar a la Plataforma", use_container_width=True)
         
         if submitted:
-            rol, cedula = verificar_credenciales(usuario_input, password_input)
+            rol, nombre, tiendas = verificar_credenciales_dinamicas(usuario_input, password_input)
             if rol:
                 st.session_state.autenticado = True
                 st.session_state.usuario_rol = rol
-                st.session_state.cedula_actual = cedula
+                st.session_state.cedula_actual = usuario_input
+                st.session_state.nombre_usuario = nombre
+                st.session_state.tiendas_asignadas = tiendas
                 st.rerun()
             else:
-                st.error("Cédula o contraseña incorrectos.")
+                st.error("Cédula incorrecta o contraseña no válida (Recuerda que es tu primer nombre seguido de un asterisco, ej: Camilo*).")
                 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -355,13 +374,13 @@ if not st.session_state.autenticado:
 # ==========================================
 # 🖥️ 3. BARRA LATERAL (NAVEGACIÓN)
 # ==========================================
-if st.session_state.usuario_rol == "Master":
-    nombre_mostrar = "Carolina Zamora (Consultora)"
-else:
-    nombre_mostrar = st.session_state.db_admins[st.session_state.cedula_actual]["nombre"]
+nombre_mostrar = st.session_state.nombre_usuario
 
 st.sidebar.markdown(f"👋 **¡Bienvenido(a), {nombre_mostrar}!**")
+if st.session_state.usuario_rol != "Master":
+    st.sidebar.markdown(f"📌 **Tienda(s) a cargo:**\n- " + "\n- ".join(st.session_state.tiendas_asignadas))
 
+st.sidebar.markdown("---")
 if st.session_state.modulo_actual != "Inicio":
     if st.sidebar.button("🏠 Menú Principal"):
         st.session_state.modulo_actual = "Inicio"
@@ -372,11 +391,13 @@ if st.sidebar.button("Cerrar Sesión"):
     st.session_state.autenticado = False
     st.session_state.usuario_rol = None
     st.session_state.cedula_actual = None
+    st.session_state.nombre_usuario = None
+    st.session_state.tiendas_asignadas = []
     st.session_state.modulo_actual = "Inicio"
     st.rerun()
 
 # ==========================================
-# 🗂️ 4. ENRUTADOR DE MÓDULOS (ESTILO ERP UNIFICADO)
+# 🗂️ 4. ENRUTADOR DE MÓDULOS
 # ==========================================
 
 if st.session_state.modulo_actual == "Inicio":
@@ -412,8 +433,8 @@ if st.session_state.modulo_actual == "Inicio":
     with col2:
         st.markdown("""
             <div class="erp-card">
-                <div class="erp-title">📅 PLANILLA SEMANAL</div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Turnos, HeadCount & Rotación Admins</div>
+                <div class="erp-title">📅 PLANILLA Y PERSONAL</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 15px;">Turnos, Base de datos & Alertas Médicas</div>
             </div>
         """, unsafe_allow_html=True)
         if st.button("🚀 Ingresar a Planilla", use_container_width=True):
@@ -462,6 +483,12 @@ elif st.session_state.modulo_actual == "Finanzas":
 
     df_mes_activo = obtener_o_crear_mes(anio_sel, mes_num)
     df_presupuesto_activo = obtener_o_crear_presupuesto(anio_sel, mes_num)
+
+    # Restringir lista de almacenes para administradores según sus tiendas asignadas
+    if st.session_state.usuario_rol == "Master":
+        almacenes_disponibles = st.session_state.lista_almacenes_base
+    else:
+        almacenes_disponibles = [t for t in st.session_state.tiendas_asignadas if t in st.session_state.lista_almacenes_base]
 
     hoy = datetime.now()
     _, total_dias_mes = calendar.monthrange(anio_sel, mes_num)
@@ -559,7 +586,6 @@ elif st.session_state.modulo_actual == "Finanzas":
 
             st.markdown(f"### 🌐 Indicadores Globales Zona 4 — {pct_meta_tiempo:.1f}% del mes")
             
-            # --- 🎯 TARJETA ERP DE PRESUPUESTO TOTAL DE ZONA ---
             st.markdown(f"""
                 <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
                     <div class="erp-title">🎯 PRESUPUESTO TOTAL ASIGNADO A LA ZONA (CONFIGURACIÓN)</div>
@@ -751,7 +777,7 @@ elif st.session_state.modulo_actual == "Finanzas":
             df_mes_corte_ind = filtrar_por_rango(df_mes_activo, primer_dia_mes, datetime(anio_sel, mes_num, min(dia_corte_ind, total_dias_mes)).date())
 
             st.subheader(f"Registro Diario por Tienda - {mes_sel_nombre} {anio_sel}")
-            almacen_sel = st.selectbox("Selecciona el almacén a auditar / operar:", st.session_state.lista_almacenes_base)
+            almacen_sel = st.selectbox("Selecciona el almacén a auditar / operar:", almacenes_disponibles)
             
             presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == almacen_sel]["Presupuesto Mes ($)"].values[0])
             meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte_ind
@@ -774,7 +800,6 @@ elif st.session_state.modulo_actual == "Finanzas":
 
             st.markdown(f"### 📍 Indicadores Exclusivos de: {almacen_sel} (Corte D-1 al Día {dia_corte_ind})")
             
-            # --- 🎯 TARJETA ERP DE PRESUPUESTO ASIGNADO A LA TIENDA ---
             st.markdown(f"""
                 <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
                     <div class="erp-title">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
@@ -879,6 +904,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                         st.error(f"Error al leer el archivo: {e}")
 
     else:
+        # VISTA PARA LÍDER / ADMINISTRADOR DE TIENDAS ASIGNADAS EN FINANZAS
         dia_corte_admin = dia_corte_default
         def filtrar_por_rango(df, inicio, fin):
             df_copia = df.copy()
@@ -888,16 +914,17 @@ elif st.session_state.modulo_actual == "Finanzas":
         primer_dia_mes = datetime(anio_sel, mes_num, 1).date()
         df_mes_corte_admin = filtrar_por_rango(df_mes_activo, primer_dia_mes, datetime(anio_sel, mes_num, min(dia_corte_admin, total_dias_mes)).date())
 
-        ced = st.session_state.cedula_actual
-        tienda = st.session_state.db_admins[ced]["tienda"]
+        st.subheader(f"📊 Módulo de Finanzas — Tiendas a Cargo ({mes_sel_nombre} {anio_sel})")
+        tiendas_permitidas = st.session_state.tiendas_asignadas
+        tienda_elegida = st.selectbox("Selecciona tu tienda asignada:", tiendas_permitidas)
         
-        presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda]["Presupuesto Mes ($)"].values[0])
+        presupuesto_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda_elegida]["Presupuesto Mes ($)"].values[0])
         meta_presup_tienda_fecha = (presupuesto_tienda / total_dias_mes) * dia_corte_admin
-        venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda][col_vp_nombre].values[0])
+        venta_pasada_tienda = float(df_presupuesto_activo[df_presupuesto_activo["Almacén"] == tienda_elegida][col_vp_nombre].values[0])
         venta_prop_pasada_tienda = (venta_pasada_tienda / total_dias_mes) * dia_corte_admin
         
-        df_mi_tienda_corte = df_mes_corte_admin[df_mes_corte_admin["Almacén"] == tienda].copy()
-        df_mi_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == tienda].copy()
+        df_mi_tienda_corte = df_mes_corte_admin[df_mes_corte_admin["Almacén"] == tienda_elegida].copy()
+        df_mi_tienda_diario = df_mes_activo[df_mes_activo["Almacén"] == tienda_elegida].copy()
         
         v_tienda = df_mi_tienda_corte["Venta Diaria ($)"].sum()
         tr_tienda = df_mi_tienda_corte["Transacciones / Clientes"].sum()
@@ -910,8 +937,14 @@ elif st.session_state.modulo_actual == "Finanzas":
         tk_tienda = (v_tienda / tr_tienda) if tr_tienda > 0 else 0.0
         pct_desp_tienda = (d_tienda / unid_tienda * 100) if unid_tienda > 0 else 0.0
 
-        st.info(f"Tienda asignada: {tienda} | Periodo: {mes_sel_nombre} {anio_sel} (Corte D-1 al Día {dia_corte_admin})")
-        
+        st.markdown(f"""
+            <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
+                <div class="erp-title">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
+                <div class="erp-value">${presupuesto_tienda:,.0f}</div>
+                <div style="font-size: 12px; color: #0077b6; margin-top: 4px;">Meta total mensual configurada para {tienda_elegida}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
         col_ad1, col_ad2, col_ad3, col_ad4, col_ad5 = st.columns(5)
         with col_ad1:
             st.markdown(f"""
@@ -963,52 +996,116 @@ elif st.session_state.modulo_actual == "Finanzas":
             lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
             axis=1
         )
-        df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", hide_index=True, key=f"admin_diario_{tienda}_{anio_sel}_{mes_num}")
+        df_diario_admin_edit = st.data_editor(df_mi_tienda_diario, num_rows="fixed", hide_index=True, key=f"admin_diario_{tienda_elegida}_{anio_sel}_{mes_num}")
         
-        col_btn_save, col_btn_dl, col_btn_ul = st.columns(3)
-        with col_btn_save:
-            if st.button("Guardar Reporte Diario de la Tienda"):
-                df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
-                    lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
-                    axis=1
-                )
-                df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_diario_admin_edit
-                guardar_mes(anio_sel, mes_num, df_mes_activo)
-                st.success("¡Reporte diario guardado de forma permanente en el sistema!")
-                st.rerun()
-
-        with col_btn_dl:
-            output_tienda_adm = BytesIO()
-            with pd.ExcelWriter(output_tienda_adm, engine='openpyxl') as writer:
-                df_mi_tienda_diario.to_excel(writer, index=False, sheet_name='Mi_Tienda_Registro')
-            excel_tienda_adm_bytes = output_tienda_adm.getvalue()
-            st.download_button(
-                label=f"📥 Descargar Plantilla Tienda",
-                data=excel_tienda_adm_bytes,
-                file_name=f"Plantilla_Registro_{tienda.split(' - ')[0]}_{mes_sel_nombre}_{anio_sel}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        if st.button("Guardar Reporte Diario de la Tienda"):
+            df_diario_admin_edit["Ticket Promedio ($)"] = df_diario_admin_edit.apply(
+                lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
+                axis=1
             )
+            df_mes_activo.loc[df_mes_activo["Almacén"] == tienda_elegida] = df_diario_admin_edit
+            guardar_mes(anio_sel, mes_num, df_mes_activo)
+            st.success("¡Reporte diario guardado de forma permanente en el sistema!")
+            st.rerun()
 
-        with col_btn_ul:
-            arch_reg_adm = st.file_uploader("Subir Plantilla Diligenciada", type=["xlsx"], key="upload_reg_adm")
-            if arch_reg_adm:
-                try:
-                    df_reg_adm_excel = pd.read_excel(arch_reg_adm)
-                    if "Fecha y Día" in df_reg_adm_excel.columns:
-                        df_reg_adm_excel["Ticket Promedio ($)"] = df_reg_adm_excel.apply(
-                            lambda row: round(row["Venta Diaria ($)"] / row["Transacciones / Clientes"], 0) if row["Transacciones / Clientes"] > 0 else 0.0,
-                            axis=1
-                        )
-                        df_mes_activo.loc[df_mes_activo["Almacén"] == tienda] = df_reg_adm_excel
-                        guardar_mes(anio_sel, mes_num, df_mes_activo)
-                        st.success("¡Registro de la tienda actualizado correctamente!")
+# ---> MÓDULO DE PLANILLA Y PERSONAL <---
+elif st.session_state.modulo_actual == "Planilla":
+    st.title("📅 Módulo de Planilla y Base de Datos de Personal")
+    
+    df_personal = obtener_o_crear_personal()
+    
+    # 🚨 SISTEMA DE ALERTAS (10 días antes de vencer exámenes médicos o manipulación)
+    hoy_date = datetime.now().date()
+    limite_alerta = hoy_date + timedelta(days=10)
+    
+    # Filtrar según rol
+    if st.session_state.usuario_rol != "Master":
+        tiendas_lider = st.session_state.tiendas_asignadas
+        df_personal_vistas = df_personal[df_personal["Tiendas Asignadas"].apply(lambda x: any(t in str(x) for t in tiendas_lider))]
+    else:
+        df_personal_vistas = df_personal.copy()
+
+    # Comprobar alertas en el personal visible
+    alertas_encontradas = []
+    for idx, row in df_personal_vistas.iterrows():
+        nombre_colab = row["Nombre Completo"]
+        tienda_colab = row["Tiendas Asignadas"]
+        
+        try:
+            f_med = datetime.strptime(str(row["Vencimiento Examen Medico"]).split(" ")[0], "%Y-%m-%d").date()
+            if hoy_date <= f_med <= limite_alerta:
+                dias_restantes = (f_med - hoy_date).days
+                alertas_encontradas.append(f"⚠️ **{nombre_colab}** ({tienda_colab}): Su **Examen Médico** vence en **{dias_restantes} días** ({f_med}).")
+        except:
+            pass
+
+        try:
+            f_mani = datetime.strptime(str(row["Vencimiento Manipulacion Alimentos"]).split(" ")[0], "%Y-%m-%d").date()
+            if hoy_date <= f_mani <= limite_alerta:
+                dias_restantes = (f_mani - hoy_date).days
+                alertas_encontradas.append(f"⚠️ **{nombre_colab}** ({tienda_colab}): Su **Curso de Manipulación de Alimentos** vence en **{dias_restantes} días** ({f_mani}).")
+        except:
+            pass
+
+    if alertas_encontradas:
+        st.error("🚨 **¡ATENCIÓN! VENCIMIENTOS PRÓXIMOS (Menos de 10 días)**")
+        for alerta in alertas_encontradas:
+            st.warning(alerta)
+        st.markdown("---")
+
+    if st.session_state.usuario_rol == "Master":
+        tab_personal_master, tab_crear_master = st.tabs(["👥 Directorio y Gestión de Personal (Zona 4)", "➕ Crear / Eliminar Personal (Espacio Master)"])
+        
+        with tab_personal_master:
+            st.subheader("Directorio General de Líderes, Admins y Auxiliares")
+            st.dataframe(df_personal, use_container_width=True, hide_index=True)
+            
+        with tab_crear_master:
+            st.subheader("➕ Agregar Nuevo Colaborador / Administrador / Líder")
+            with st.form("form_crear_personal"):
+                c_ced = st.text_input("Número de Cédula (Será su usuario):")
+                c_nom = st.text_input("Nombre Completo:")
+                c_rol = st.selectbox("Rol en la plataforma:", ["Auxiliar", "Administrador / Líder"])
+                c_tienda = st.multiselect("Tienda(s) Asignada(s):", st.session_state.lista_almacenes_base)
+                c_cumple = st.date_input("Fecha de Cumpleaños:", value=datetime(1995, 1, 1))
+                c_med = st.date_input("Vencimiento Examen Médico:", value=datetime.now() + timedelta(days=90))
+                c_mani = st.date_input("Vencimiento Curso Manipulación:", value=datetime.now() + timedelta(days=90))
+                
+                btn_crear = st.form_submit_button("Guardar Nuevo Personal")
+                if btn_crear:
+                    if c_ced and c_nom and c_tienda:
+                        nueva_fila = pd.DataFrame([{
+                            "Cedula": str(c_ced).strip(),
+                            "Nombre Completo": c_nom.strip(),
+                            "Rol": c_rol,
+                            "Tiendas Asignadas": ", ".join(c_tienda),
+                            "Cumpleanos": str(c_cumple),
+                            "Vencimiento Examen Medico": str(c_med),
+                            "Vencimiento Manipulacion Alimentos": str(c_mani)
+                        }])
+                        df_personal = pd.concat([df_personal, nueva_fila], ignore_index=True)
+                        guardar_personal(df_personal)
+                        st.success(f"¡Colaborador {c_nom} agregado correctamente!")
                         st.rerun()
                     else:
-                        st.error("El archivo Excel no tiene la columna requerida ('Fecha y Día').")
-                except Exception as e:
-                    st.error(f"Error al leer el archivo: {e}")
+                        st.error("Por favor completa la cédula, el nombre y al menos una tienda.")
 
-# ---> MÓDULO DE AUDITORÍA EOR (CONECTADO AL EXCEL OFICIAL) <---
+            st.markdown("---")
+            st.subheader("🗑️ Eliminar Colaborador")
+            cedulas_existentes = df_personal["Cedula"].astype(str).tolist()
+            cedula_a_borrar = st.selectbox("Selecciona la cédula del colaborador a eliminar:", cedulas_existentes)
+            if st.button("Eliminar Colaborador Seleccionado"):
+                df_personal = df_personal[df_personal["Cedula"].astype(str) != str(cedula_a_borrar)]
+                guardar_personal(df_personal)
+                st.success("Colaborador eliminado con éxito.")
+                st.rerun()
+    else:
+        # VISTA PARA LÍDER / ADMINISTRADOR
+        st.subheader(f"👥 Personal Asignado a tus Tiendas")
+        st.write("Aquí puedes consultar la información y vigencias de carnets y exámenes de tu equipo:")
+        st.dataframe(df_personal_vistas, use_container_width=True, hide_index=True)
+
+# ---> MÓDULO DE AUDITORÍA EOR <---
 elif st.session_state.modulo_actual == "EOR":
     st.title("📋 Módulo de Auditoría EOR - Zona 4")
     st.write(f"Realiza la auditoría oficial sincronizada directamente con el archivo Excel maestro (**{EXCEL_EOR_MAESTRO}**):")
@@ -1049,10 +1146,8 @@ elif st.session_state.modulo_actual == "EOR":
 
             if val_id and val_desc and str(val_id).startswith(("RSI", "FS-", "RC", "GS", "RE", "TR", "Pregunta", "MD", "ES", "LS")):
                 desc_str = str(val_desc).strip()
-                
                 if id_str == "RSI 4":
                     desc_str = "Libre de atascos de alcantarillado e inundaciones"
-                
                 if id_str == "RSI 9":
                     id_str = "RSI 7 (RSI 9)"
 
@@ -1062,21 +1157,26 @@ elif st.session_state.modulo_actual == "EOR":
                     "Pregunta": desc_str
                 })
 
+        # Filtrar tiendas permitidas para auditoría
+        if st.session_state.usuario_rol == "Master":
+            tiendas_auditables = st.session_state.lista_almacenes_base
+        else:
+            tiendas_auditables = st.session_state.tiendas_asignadas
+
         with st.form("form_eor_maestro"):
             col_e1, col_e2, col_e3 = st.columns(3)
             with col_e1:
                 fecha_auditoria = st.date_input("Fecha de Auditoría:", value=datetime.now().date())
             with col_e2:
-                tienda_auditada = st.selectbox("Almacén a Auditar:", st.session_state.lista_almacenes_base)
+                tienda_auditada = st.selectbox("Almacén a Auditar:", tiendas_auditables)
             with col_e3:
                 responsable_tienda = st.text_input("Responsable / Administrador:", value="Administrador de Tienda")
-                auditor_nombre = st.text_input("Evaluador / Consultora:", value="Carolina Zamora")
+                auditor_nombre = st.text_input("Evaluador / Consultora:", value=st.session_state.nombre_usuario)
 
             st.markdown("---")
             st.markdown("### 🔍 Evaluación por Estándares (One Inspire / EOR)")
 
             respuestas_usuario = []
-            
             cat_grupo = ""
             for idx, item in enumerate(preguntas_eor):
                 if item["Categoria"] != cat_grupo:
@@ -1088,7 +1188,7 @@ elif st.session_state.modulo_actual == "EOR":
                 with c_val:
                     calif = st.selectbox("Cumplimiento:", ["Sí", "No", "N/A"], key=f"eor_val_{idx}")
                 with c_obs:
-                    obs = st.text_input("Observación / Justificación (Por qué cumple o no):", key=f"eor_obs_{idx}", placeholder="Escribe aquí el motivo o hallazgo...")
+                    obs = st.text_input("Observación / Justificación:", key=f"eor_obs_{idx}", placeholder="Escribe aquí el motivo o hallazgo...")
                 st.markdown("")
                 
                 respuestas_usuario.append({
@@ -1104,20 +1204,12 @@ elif st.session_state.modulo_actual == "EOR":
             if submitted_eor_real:
                 try:
                     wb_mod = openpyxl.load_workbook(EXCEL_EOR_MAESTRO)
-                    
                     codigo_tienda_str = tienda_auditada.split(" - ")[0].strip()
                     nombre_hoja_eor = f"EOR {codigo_tienda_str}"
                     nombre_hoja_pa = f"P.A. {codigo_tienda_str}"
                     
-                    if nombre_hoja_eor not in wb_mod.sheetnames:
-                        ws_nueva_eor = wb_mod.create_sheet(title=nombre_hoja_eor)
-                    else:
-                        ws_nueva_eor = wb_mod[nombre_hoja_eor]
-                        
-                    if nombre_hoja_pa not in wb_mod.sheetnames:
-                        ws_nueva_pa = wb_mod.create_sheet(title=nombre_hoja_pa)
-                    else:
-                        ws_nueva_pa = wb_mod[nombre_hoja_pa]
+                    ws_nueva_eor = wb_mod[nombre_hoja_eor] if nombre_hoja_eor in wb_mod.sheetnames else wb_mod.create_sheet(title=nombre_hoja_eor)
+                    ws_nueva_pa = wb_mod[nombre_hoja_pa] if nombre_hoja_pa in wb_mod.sheetnames else wb_mod.create_sheet(title=nombre_hoja_pa)
 
                     escribir_celda_segura(ws_nueva_eor, 'C3', tienda_auditada)
                     escribir_celda_segura(ws_nueva_eor, 'C4', f"{responsable_tienda} - {auditor_nombre}")
@@ -1142,8 +1234,7 @@ elif st.session_state.modulo_actual == "EOR":
                         row_pa += 1
 
                     wb_mod.save(EXCEL_EOR_MAESTRO)
-                    st.success(f"¡Auditoría de {tienda_auditada} guardada con éxito! El archivo Excel '{EXCEL_EOR_MAESTRO}' ha sido actualizado en la pestaña '{nombre_hoja_eor}' y su Plan de Acción en '{nombre_hoja_pa}'.")
-                
+                    st.success(f"¡Auditoría de {tienda_auditada} guardada con éxito!")
                 except Exception as e:
                     st.error(f"Error al actualizar el archivo Excel: {e}")
 
@@ -1151,10 +1242,6 @@ elif st.session_state.modulo_actual == "EOR":
 elif st.session_state.modulo_actual == "Inventarios":
     st.title("📦 Módulo de Inventarios")
     st.info("🚧 Módulo en construcción. Aquí controlaremos el stock y los pedidos.")
-
-elif st.session_state.modulo_actual == "Planilla":
-    st.title("📅 Módulo de Planilla Semanal")
-    st.info("🚧 Módulo en construcción. Aquí gestionaremos turnos y HeadCount.")
 
 elif st.session_state.modulo_actual == "Previsiones":
     st.title("🔮 Módulo de Previsiones")
