@@ -175,7 +175,7 @@ if "lista_almacenes_base" not in st.session_state:
     ]
 
 # ==========================================
-# 💾 PERSISTENCIA CON ARCHIVOS CSV Y EXCEL EOR
+# 💾 PERSISTENCIA CON ARCHIVOS CSV Y AUTO-SYNC
 # ==========================================
 DIR_DATOS = "datos_persistencia"
 if not os.path.exists(DIR_DATOS):
@@ -196,7 +196,19 @@ def obtener_o_crear_presupuesto(anio, mes_num):
                 df_existente.rename(columns={col_vieja[0]: col_venta_pasada}, inplace=True)
             else:
                 df_existente[col_venta_pasada] = 0.0
+        
+        # Auto-sincronizar nuevas tiendas añadidas al código
+        almacenes_actuales = df_existente["Almacén"].tolist()
+        nuevos_almacenes = [tienda for tienda in st.session_state.lista_almacenes_base if tienda not in almacenes_actuales]
+        if nuevos_almacenes:
+            filas_nuevas = pd.DataFrame({
+                "Almacén": nuevos_almacenes,
+                "Presupuesto Mes ($)": [15000000.0] * len(nuevos_almacenes),
+                col_venta_pasada: [0.0] * len(nuevos_almacenes)
+            })
+            df_existente = pd.concat([df_existente, filas_nuevas], ignore_index=True)
             df_existente.to_csv(ruta_csv, index=False)
+            
         return df_existente
     else:
         df_nuevo = pd.DataFrame({
@@ -215,16 +227,40 @@ def guardar_presupuesto(anio, mes_num, df):
 def obtener_o_crear_mes(anio, mes_num):
     clave_mes = f"{anio}-{mes_num:02d}"
     ruta_csv = os.path.join(DIR_DATOS, f"registros_{clave_mes}.csv")
+    _, num_dias = calendar.monthrange(anio, mes_num)
+    dias_espanol = {
+        'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles', 
+        'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+    }
     
     if os.path.exists(ruta_csv):
-        return pd.read_csv(ruta_csv)
-    else:
-        _, num_dias = calendar.monthrange(anio, mes_num)
-        dias_espanol = {
-            'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles', 
-            'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
-        }
+        df_existente = pd.read_csv(ruta_csv)
+        almacenes_actuales = df_existente["Almacén"].unique().tolist()
+        nuevos_almacenes = [tienda for tienda in st.session_state.lista_almacenes_base if tienda not in almacenes_actuales]
         
+        if nuevos_almacenes:
+            registros = []
+            for tienda in nuevos_almacenes:
+                for d in range(1, num_dias + 1):
+                    fecha_obj = datetime(anio, mes_num, d)
+                    dia_ingles = fecha_obj.strftime('%A')
+                    dia_esp = dias_espanol.get(dia_ingles, dia_ingles)
+                    fecha_str = f"{fecha_obj.strftime('%Y-%m-%d')} - {dia_esp}"
+                    
+                    registros.append({
+                        "Almacén": tienda,
+                        "Fecha y Día": fecha_str,
+                        "Venta Diaria ($)": 0.0,
+                        "Transacciones / Clientes": 0,
+                        "Unidades Vendidas": 0,
+                        "Desperdicio (Unid)": 0
+                    })
+            df_nuevos_registros = pd.DataFrame(registros)
+            df_existente = pd.concat([df_existente, df_nuevos_registros], ignore_index=True)
+            df_existente.to_csv(ruta_csv, index=False)
+            
+        return df_existente
+    else:
         registros = []
         for tienda in st.session_state.lista_almacenes_base:
             for d in range(1, num_dias + 1):
@@ -701,7 +737,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                             st.success("¡Presupuestos cargados y actualizados correctamente!")
                             st.rerun()
                         else:
-                            st.error("El archivo Excel não tiene las columnas requeridas ('Almacén', 'Presupuesto Mes ($)').")
+                            st.error("El archivo Excel no tiene las columnas requeridas ('Almacén', 'Presupuesto Mes ($)').")
                     except Exception as e:
                         st.error(f"Error al leer el archivo: {e}")
             
