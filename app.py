@@ -1082,11 +1082,13 @@ elif st.session_state.modulo_actual == "Planilla":
                 c_rol = st.selectbox("Rol en la plataforma:", ["Auxiliar", "Administrador / Líder"])
                 c_tienda = st.multiselect("Tienda(s) Asignada(s):", st.session_state.lista_almacenes_base)
                 
-                # Selector de fecha de ingreso ampliado 45 años atrás
-                min_fecha_ingreso = datetime.now().date() - timedelta(days=45*365)
-                c_ingreso = st.date_input("Fecha de Ingreso (Contrato):", value=datetime.now().date() - timedelta(days=365), min_value=min_fecha_ingreso, max_value=datetime.now().date())
+                # Rango ampliado de 1950 a 2050 para Fecha de Ingreso y Cumpleaños
+                min_rango_fecha = datetime(1950, 1, 1).date()
+                max_rango_fecha = datetime(2050, 12, 31).date()
                 
-                c_cumple = st.date_input("Fecha de Cumpleaños:", value=datetime(1995, 1, 1))
+                c_ingreso = st.date_input("Fecha de Ingreso (Contrato):", value=datetime.now().date() - timedelta(days=365), min_value=min_rango_fecha, max_value=max_rango_fecha)
+                c_cumple = st.date_input("Fecha de Cumpleaños:", value=datetime(1995, 1, 1).date(), min_value=min_rango_fecha, max_value=max_rango_fecha)
+                
                 c_med = st.date_input("Vencimiento Examen Médico:", value=datetime.now() + timedelta(days=90))
                 c_mani = st.date_input("Vencimiento Curso Manipulación:", value=datetime.now() + timedelta(days=90))
                 
