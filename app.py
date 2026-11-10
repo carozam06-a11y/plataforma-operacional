@@ -171,7 +171,7 @@ if "lista_almacenes_base" not in st.session_state:
         "PV 257 - ALCALA", "PV 283 - Au Ed Sa 123-24 L10",
         "PV 284 - Edif Tokio LC1", "PV 285 - TORR EMPRESARIAL FD-100",
         "PV 290 - CL 90 16 10 LC 5 ED", "PV 295 - CALLE 147",
-        "PV 296 - NIZA CALLE 127"
+        "PV 296 - NIZA CALLE 127", "PV 403 - EDIF JASBAN AC 45 NO. 105 - 24"
     ]
 
 # ==========================================
@@ -251,7 +251,6 @@ def guardar_mes(anio, mes_num, df):
     df.to_csv(ruta_csv, index=False)
 
 def escribir_celda_segura(sheet, coordenada, valor):
-    """Descombina el rango si existe y escribe directamente en la celda."""
     import openpyxl.utils
     col_letra = ''.join([c for c in coordenada if c.isalpha()])
     row_num = int(''.join([c for c in coordenada if c.isdigit()]))
@@ -264,7 +263,6 @@ def escribir_celda_segura(sheet, coordenada, valor):
     sheet.cell(row=row_num, column=col_num, value=valor)
 
 def escribir_celda_por_indices(sheet, row, col, valor):
-    """Descombina el rango si existe y escribe por número de fila y columna."""
     for rango in list(sheet.merged_cells.ranges):
         if row >= rango.min_row and row <= rango.max_row and col >= rango.min_col and col <= rango.max_col:
             sheet.unmerge_cells(str(rango))
@@ -519,12 +517,21 @@ elif st.session_state.modulo_actual == "Finanzas":
                 pct_desp_zona = (total_desp_zona / total_unid_zona * 100) if total_unid_zona > 0 else 0.0
                 total_venta_prop_pasada = df_con["Venta Proporcional Año Pasado ($)"].sum()
                 crecimiento_zona = ((total_venta - total_venta_prop_pasada) / total_venta_prop_pasada * 100) if total_venta_prop_pasada > 0 else 0.0
-                return total_venta, cumplimiento, cumplimiento_proporcional_rango, pct_desp_zona, ticket_prom_zona, meta_acumulada_rango, crecimiento_zona
+                return total_venta, cumplimiento, cumplimiento_proporcional_rango, pct_desp_zona, ticket_prom_zona, meta_acumulada_rango, crecimiento_zona, total_presupuesto
 
-            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona = calcular_metricas_globales_rango(df_consolidado_rango, df_presupuesto_activo)
+            t_venta, t_cumplimiento, t_cump_prop, t_pct_desp_zona, t_ticket_zona, meta_fecha_zona, crecimiento_zona, presupuesto_total_zona = calcular_metricas_globales_rango(df_consolidado_rango, df_presupuesto_activo)
 
             st.markdown(f"### 🌐 Indicadores Globales Zona 4 — {pct_meta_tiempo:.1f}% del mes")
             
+            # --- 🎯 TARJETA ERP DE PRESUPUESTO TOTAL DE ZONA ---
+            st.markdown(f"""
+                <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
+                    <div class="erp-title">🎯 PRESUPUESTO TOTAL ASIGNADO A LA ZONA (CONFIGURACIÓN)</div>
+                    <div class="erp-value">${presupuesto_total_zona:,.0f}</div>
+                    <div style="font-size: 12px; color: #0077b6; margin-top: 4px;">Suma de metas configuradas para todos los almacenes en {mes_sel_nombre} {anio_sel}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
             col_k1, col_k2, col_k3, col_k4, col_k5 = st.columns(5)
             with col_k1:
                 st.markdown(f"""
@@ -694,7 +701,7 @@ elif st.session_state.modulo_actual == "Finanzas":
                             st.success("¡Presupuestos cargados y actualizados correctamente!")
                             st.rerun()
                         else:
-                            st.error("El archivo Excel no tiene las columnas requeridas ('Almacén', 'Presupuesto Mes ($)').")
+                            st.error("El archivo Excel não tiene las columnas requeridas ('Almacén', 'Presupuesto Mes ($)').")
                     except Exception as e:
                         st.error(f"Error al leer el archivo: {e}")
             
@@ -731,6 +738,15 @@ elif st.session_state.modulo_actual == "Finanzas":
 
             st.markdown(f"### 📍 Indicadores Exclusivos de: {almacen_sel} (Corte D-1 al Día {dia_corte_ind})")
             
+            # --- 🎯 TARJETA ERP DE PRESUPUESTO ASIGNADO A LA TIENDA ---
+            st.markdown(f"""
+                <div class="erp-card" style="max-width: 100%; margin-bottom: 20px;">
+                    <div class="erp-title">🎯 PRESUPUESTO ASIGNADO A ESTA TIENDA</div>
+                    <div class="erp-value">${presupuesto_tienda:,.0f}</div>
+                    <div style="font-size: 12px; color: #0077b6; margin-top: 4px;">Meta total mensual configurada para {almacen_sel}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
             col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
             with col_t1:
                 st.markdown(f"""
@@ -967,7 +983,6 @@ elif st.session_state.modulo_actual == "EOR":
         wb_maestro = openpyxl.load_workbook(EXCEL_EOR_MAESTRO, data_only=True)
         sheet_rev = wb_maestro[' Revisión de operaciones']
 
-        # Módulos / Categorías excluidas a petición de la Consultora
         modulos_excluidos = [
             "Limpieza del restaurante", 
             "Servicios para huéspedes", 
@@ -978,7 +993,6 @@ elif st.session_state.modulo_actual == "EOR":
             "Normas de equipamiento"
         ]
 
-        # Extraer estructura de ítems desde la hoja ' Revisión de operaciones'
         preguntas_eor = []
         cat_actual = ""
         
@@ -990,11 +1004,9 @@ elif st.session_state.modulo_actual == "EOR":
             if val_cat and val_cat.strip():
                 cat_actual = val_cat.strip()
             
-            # Omitir categorías excluidas
             if any(exc.lower() in cat_actual.lower() for exc in modulos_excluidos):
                 continue
 
-            # Omitir RSI 7 (unificado en RSI 4) y RSI 8 (excluido)
             id_str = str(val_id).strip() if val_id else ""
             if id_str in ["RSI 7", "RSI 8"]:
                 continue
@@ -1002,11 +1014,9 @@ elif st.session_state.modulo_actual == "EOR":
             if val_id and val_desc and str(val_id).startswith(("RSI", "FS-", "RC", "GS", "RE", "TR", "Pregunta", "MD", "ES", "LS")):
                 desc_str = str(val_desc).strip()
                 
-                # Unificar RSI 4 con RSI 7
                 if id_str == "RSI 4":
                     desc_str = "Libre de atascos de alcantarillado e inundaciones"
                 
-                # Reenumerar RSI 9 como número 7 si es necesario en etiqueta
                 if id_str == "RSI 9":
                     id_str = "RSI 7 (RSI 9)"
 
@@ -1073,20 +1083,20 @@ elif st.session_state.modulo_actual == "EOR":
                     else:
                         ws_nueva_pa = wb_mod[nombre_hoja_pa]
 
-                    escribir_celda_segura(ws_nueva_eor, 'C2', tienda_auditada)
-                    escribir_celda_segura(ws_nueva_eor, 'C3', f"{responsable_tienda} - {auditor_nombre}")
-                    escribir_celda_segura(ws_nueva_eor, 'C4', datetime.combine(fecha_auditoria, datetime.min.time()))
+                    escribir_celda_segura(ws_nueva_eor, 'C3', tienda_auditada)
+                    escribir_celda_segura(ws_nueva_eor, 'C4', f"{responsable_tienda} - {auditor_nombre}")
+                    escribir_celda_segura(ws_nueva_eor, 'C5', datetime.combine(fecha_auditoria, datetime.min.time()))
 
                     brechas = [r for r in respuestas_usuario if r["Calificacion"] == "No"]
                     
                     escribir_celda_segura(ws_nueva_pa, 'A1', "Plan de Acción — Mejora Continua EOR Zona 4")
-                    escribir_celda_por_indices(ws_nueva_pa, 3, 1, "Accion correctiva / Plan de accion")
-                    escribir_celda_por_indices(ws_nueva_pa, 3, 2, "Responsable")
-                    escribir_celda_por_indices(ws_nueva_pa, 3, 3, "Fecha de ejecucion prevista")
-                    escribir_celda_por_indices(ws_nueva_pa, 3, 4, "Comentarios / Hallazgos")
-                    escribir_celda_por_indices(ws_nueva_pa, 3, 5, "Fecha de cierre real")
+                    escribir_celda_por_indices(ws_nueva_pa, 4, 1, "Accion correctiva / Plan de accion")
+                    escribir_celda_por_indices(ws_nueva_pa, 4, 2, "Responsable")
+                    escribir_celda_por_indices(ws_nueva_pa, 4, 3, "Fecha de ejecucion prevista")
+                    escribir_celda_por_indices(ws_nueva_pa, 4, 4, "Comentarios / Hallazgos")
+                    escribir_celda_por_indices(ws_nueva_pa, 4, 5, "Fecha de cierre real")
                     
-                    row_pa = 4
+                    row_pa = 5
                     for b in brechas:
                         escribir_celda_por_indices(ws_nueva_pa, row_pa, 1, f"Atender hallazgo en [{b['Id']}]: {b['Pregunta']}")
                         escribir_celda_por_indices(ws_nueva_pa, row_pa, 2, responsable_tienda)
