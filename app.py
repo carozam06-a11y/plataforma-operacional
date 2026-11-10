@@ -184,10 +184,8 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 def obtener_o_crear_personal():
     try:
         sheet = conectar_google_sheets()
-        # Obtenemos todos los registros de la hoja de Google Sheets
         registros = sheet.get_all_records()
         if not registros:
-            # Si la hoja está vacía, creamos los datos iniciales por defecto
             df_inicial = pd.DataFrame([
                 {
                     "Cedula": "101010101",
@@ -200,14 +198,21 @@ def obtener_o_crear_personal():
                     "Vencimiento Manipulacion Alimentos": "2026-06-01"
                 }
             ])
-            # Subimos los encabezados y datos iniciales a Google Sheets
             sheet.update([df_inicial.columns.values.tolist()] + df_inicial.values.tolist())
             return df_inicial
         return pd.DataFrame(registros)
     except Exception as e:
         st.error(f"Error al conectar con Google Sheets: {e}")
-        # Si llega a fallar el internet, retorna una tabla vacía para que no se caiga la app
         return pd.DataFrame(columns=["Cedula", "Nombre Completo", "Rol", "Tiendas Asignadas", "Fecha Ingreso", "Cumpleanos", "Vencimiento Examen Medico", "Vencimiento Manipulacion Alimentos"])
+
+def guardar_personal(df):
+    try:
+        sheet = conectar_google_sheets()
+        sheet.clear()
+        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        st.success("¡Información guardada y sincronizada en la nube con éxito!")
+    except Exception as e:
+        st.error(f"Error al guardar en la nube: {e}")
 
 def guardar_personal(df):
     try:
