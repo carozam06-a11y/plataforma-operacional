@@ -9,17 +9,7 @@ from io import BytesIO
 import os
 import openpyxl
 from openpyxl.cell.cell import MergedCell
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
-# Conexión centralizada con Google Sheets en la nube
-def conectar_google_sheets():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.auth.com/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds_dict = dict(st.secrets["gcp_service_account"])
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
-    sheet = client.open("Plataforma_Operacional_Zona4_Master").sheet1
-    return sheet
 st.set_page_config(page_title="Plataforma Operacional - Zona 4 Dunkin", layout="wide")
 
 # ==========================================
@@ -196,21 +186,36 @@ def conectar_google_sheets():
 def guardar_personal(df):
     try:
         sheet = conectar_google_sheets()
-        sheet.clear()
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
-        st.success("¡Información guardada y sincronizada en la nube con éxito!")
-    except Exception as e:
-        st.error(f"Error al guardar en la nube: {e}")
-
-def guardar_personal(df):
-    try:
-        sheet = conectar_google_sheets()
         sheet.clear() # Limpia la hoja de cálculo
         # Actualiza con la nueva información al instante para todos los equipos
         sheet.update([df.columns.values.tolist()] + df.values.tolist())
         st.success("¡Información guardada y sincronizada en la nube con éxito!")
     except Exception as e:
         st.error(f"Error al guardar en la nube: {e}")
+
+def obtener_o_crear_personal():
+    try:
+        sheet = conectar_google_sheets()
+        registros = sheet.get_all_records()
+        if not registros:
+            df_inicial = pd.DataFrame([
+                {
+                    "Cedula": "101010101",
+                    "Nombre Completo": "Camilo Torres",
+                    "Rol": "Administrador / Líder",
+                    "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+                    "Fecha Ingreso": "2024-01-15",
+                    "Cumpleanos": "1995-05-12",
+                    "Vencimiento Examen Medico": "2026-06-01",
+                    "Vencimiento Manipulacion Alimentos": "2026-06-01"
+                }
+            ])
+            sheet.update([df_inicial.columns.values.tolist()] + df_inicial.values.tolist())
+            return df_inicial
+        return pd.DataFrame(registros)
+    except Exception as e:
+        st.error(f"Error al conectar con Google Sheets: {e}")
+        return pd.DataFrame(columns=["Cedula", "Nombre Completo", "Rol", "Tiendas Asignadas", "Fecha Ingreso", "Cumpleanos", "Vencimiento Examen Medico", "Vencimiento Manipulacion Alimentos"])
 
 def calcular_vacaciones_causadas(fecha_ingreso_str):
     try:
@@ -443,7 +448,6 @@ if st.session_state.modulo_actual == "Inicio":
     st.write("Selecciona el módulo de gestión que deseas operar:")
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Renderizado mediante Grid 2D adaptable (funciona perfecto en móviles, tablets y PCs)
     st.markdown("""
         <div class="grid-menu-container">
             <div class="erp-card-modern">
