@@ -144,8 +144,8 @@ st.markdown("""
 # ==========================================
 # 🔐 1. CREDENCIALES Y DATOS INICIALES
 # ==========================================
-CEDULA_MASTER = "TU_CEDULA"      
-CLAVE_MASTER = "TU_NOMBRE_FECHA"  
+CEDULA_MASTER = "1032463775"      
+CLAVE_MASTER = "Carolina2026"  
 
 if "db_admins" not in st.session_state:
     st.session_state.db_admins = {
