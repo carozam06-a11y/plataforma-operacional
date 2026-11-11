@@ -170,22 +170,25 @@ if not os.path.exists(DIR_DATOS):
 
 EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 # ==========================================
-# ☁️ CONEXIÓN NATIVA CON GOOGLE SHEETS
+# ☁️ CONEXIÓN CON GOOGLE SHEETS
 # ==========================================
 def conectar_google_sheets():
-    # Usamos la conexión nativa de Streamlit (lee los secretos automáticamente)
-    conn = st.connection("gsheets", type="gsheets")
-    # O si prefieres usar gspread directamente sin enredos de llaves, 
-    # podemos usar gspread con las credenciales de st.secrets de esta forma:
-    import gspread
-    from google.oauth2.service_account import Credentials
-    
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
+    scope = [
+        "https://spreadsheets.google.com/feeds", 
+        "https://www.googleapis.com/auth/spreadsheets", 
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    
+    # Aseguramos el token_uri que exige Google
+    if "token_uri" not in creds_dict:
+        creds_dict["token_uri"] = "https://oauth2.googleapis.com/token"
+        
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
     sheet = client.open("Plataforma_Operacional_Zona4_Master").sheet1
     return sheet
