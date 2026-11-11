@@ -174,8 +174,14 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 # ☁️ CONEXIÓN ROBUSTA CON GOOGLE SHEETS
 # ==========================================
 def conectar_google_sheets():
-    # Usamos directamente el diccionario de credenciales soportado por gspread
-    gc = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
+    # Convertimos los secretos en un diccionario de Python
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    
+    # Agregamos automáticamente el token_uri que Google está pidiendo
+    if "token_uri" not in creds_dict:
+        creds_dict["token_uri"] = "https://oauth2.googleapis.com/token"
+        
+    gc = gspread.service_account_from_dict(creds_dict)
     sheet = gc.open("Plataforma_Operacional_Zona4_Master").sheet1
     return sheet
 
