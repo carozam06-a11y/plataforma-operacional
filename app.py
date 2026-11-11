@@ -173,22 +173,28 @@ EXCEL_EOR_MAESTRO = "EOR 2026.xlsx"
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+import gspread
+from google.oauth2.service_account import Credentials
+
 # ==========================================
-# ☁️ CONEXIÓN CON GOOGLE SHEETS
+# ☁️ CONEXIÓN DEFINITIVA CON GOOGLE SHEETS
 # ==========================================
 def conectar_google_sheets():
-    scope = [
-        "https://spreadsheets.google.com/feeds", 
-        "https://www.googleapis.com/auth/spreadsheets", 
+    scopes = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
+    
+    # Convertimos los secretos a un diccionario estándar
     creds_dict = dict(st.secrets["gcp_service_account"])
     
-    # Aseguramos el token_uri que exige Google
+    # Aseguramos el token_uri obligatorio para evitar cualquier fallo
     if "token_uri" not in creds_dict:
         creds_dict["token_uri"] = "https://oauth2.googleapis.com/token"
         
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    # Autorización moderna con google.oauth2 (sin archivos ni enredos de PEM)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
     sheet = client.open("Plataforma_Operacional_Zona4_Master").sheet1
     return sheet
