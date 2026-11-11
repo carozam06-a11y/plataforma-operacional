@@ -199,39 +199,40 @@ def conectar_google_sheets():
     sheet = client.open("Plataforma_Operacional_Zona4_Master").sheet1
     return sheet
 
-def guardar_personal(df):
-    try:
-        sheet = conectar_google_sheets()
-        sheet.clear() # Limpia la hoja de cálculo
-        # Actualiza con la nueva información al instante para todos los equipos
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
-        st.success("¡Información guardada y sincronizada en la nube con éxito!")
-    except Exception as e:
-        st.error(f"Error al guardar en la nube: {e}")
+# ==========================================
+# 📂 GESTIÓN DE PERSONAL CON CSV LOCAL (Cero errores de nube)
+# ==========================================
+RUTA_PERSONAL_CSV = os.path.join(DIR_DATOS, "personal.csv")
 
 def obtener_o_crear_personal():
+    if os.path.exists(RUTA_PERSONAL_CSV):
+        try:
+            return pd.read_csv(RUTA_PERSONAL_CSV)
+        except Exception:
+            pass
+            
+    # Si no existe o hay error, creamos el archivo con el registro inicial
+    df_inicial = pd.DataFrame([
+        {
+            "Cedula": "101010101",
+            "Nombre Completo": "Camilo Torres",
+            "Rol": "Administrador / Líder",
+            "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
+            "Fecha Ingreso": "2024-01-15",
+            "Cumpleanos": "1995-05-12",
+            "Vencimiento Examen Medico": "2026-06-01",
+            "Vencimiento Manipulacion Alimentos": "2026-06-01"
+        }
+    ])
+    df_inicial.to_csv(RUTA_PERSONAL_CSV, index=False)
+    return df_inicial
+
+def guardar_personal(df):
     try:
-        sheet = conectar_google_sheets()
-        registros = sheet.get_all_records()
-        if not registros:
-            df_inicial = pd.DataFrame([
-                {
-                    "Cedula": "101010101",
-                    "Nombre Completo": "Camilo Torres",
-                    "Rol": "Administrador / Líder",
-                    "Tiendas Asignadas": "PV 102 - CR 12 89 33 LC 1",
-                    "Fecha Ingreso": "2024-01-15",
-                    "Cumpleanos": "1995-05-12",
-                    "Vencimiento Examen Medico": "2026-06-01",
-                    "Vencimiento Manipulacion Alimentos": "2026-06-01"
-                }
-            ])
-            sheet.update([df_inicial.columns.values.tolist()] + df_inicial.values.tolist())
-            return df_inicial
-        return pd.DataFrame(registros)
+        df.to_csv(RUTA_PERSONAL_CSV, index=False)
+        st.success("¡Información de personal guardada con éxito en el sistema!")
     except Exception as e:
-        st.error(f"Error al conectar con Google Sheets: {e}")
-        return pd.DataFrame(columns=["Cedula", "Nombre Completo", "Rol", "Tiendas Asignadas", "Fecha Ingreso", "Cumpleanos", "Vencimiento Examen Medico", "Vencimiento Manipulacion Alimentos"])
+        st.error(f"Error al guardar los datos: {e}")
 
 def calcular_vacaciones_causadas(fecha_ingreso_str):
     try:
